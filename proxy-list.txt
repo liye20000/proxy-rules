@@ -1,0 +1,62 @@
+# 代理白名单 - 主源文件
+# 每行一个域名,以 # 开头的行为注释
+# 修改后 GitHub Actions 会自动重新生成 v2rayn-rules.json
+# 最后更新:2026-06-10
+
+# ===== Anthropic / Claude =====
+anthropic.com
+claude.ai
+claude.com
+
+# ===== OpenAI / ChatGPT =====
+openai.com
+chatgpt.com
+oaistatic.com
+oaiusercontent.com
+sora.com
+
+# ===== GitHub =====
+github.com
+githubusercontent.com
+githubassets.com
+github.io
+githubapp.com
+git.io
+
+# ===== Google =====
+google.com
+googleapis.com
+googleusercontent.com
+gstatic.com
+ggpht.com
+gmail.com
+googlevideo.com
+goo.gl
+android.com
+withgoogle.com
+
+# ===== YouTube =====
+youtube.com
+youtu.be
+ytimg.com
+youtube-nocookie.com
+
+# ===== Twitter / X =====
+twitter.com
+x.com
+twimg.com
+t.co
+
+# ===== TradingView =====
+tradingview.com
+tradingview-widget.com
+
+# ===== Binance(币安)=====
+binance.com
+bnbstatic.com
+binancezh.com
+bn-files.com
+
+# ===== Bitget =====
+bitget.com
+bgstatic.com

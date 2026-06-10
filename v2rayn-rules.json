@@ -1,0 +1,87 @@
+[
+  {
+    "outboundTag": "proxy",
+    "port": "",
+    "protocol": [],
+    "inboundTag": [],
+    "domain": [
+      "domain:anthropic.com",
+      "domain:claude.ai",
+      "domain:claude.com",
+      "domain:openai.com",
+      "domain:chatgpt.com",
+      "domain:oaistatic.com",
+      "domain:oaiusercontent.com",
+      "domain:sora.com",
+      "domain:github.com",
+      "domain:githubusercontent.com",
+      "domain:githubassets.com",
+      "domain:github.io",
+      "domain:githubapp.com",
+      "domain:git.io",
+      "domain:google.com",
+      "domain:googleapis.com",
+      "domain:googleusercontent.com",
+      "domain:gstatic.com",
+      "domain:ggpht.com",
+      "domain:gmail.com",
+      "domain:googlevideo.com",
+      "domain:goo.gl",
+      "domain:android.com",
+      "domain:withgoogle.com",
+      "domain:youtube.com",
+      "domain:youtu.be",
+      "domain:ytimg.com",
+      "domain:youtube-nocookie.com",
+      "domain:twitter.com",
+      "domain:x.com",
+      "domain:twimg.com",
+      "domain:t.co",
+      "domain:tradingview.com",
+      "domain:tradingview-widget.com",
+      "domain:binance.com",
+      "domain:bnbstatic.com",
+      "domain:binancezh.com",
+      "domain:bn-files.com",
+      "domain:bitget.com",
+      "domain:bgstatic.com"
+    ],
+    "ip": [],
+    "enabled": true
+  },
+  {
+    "outboundTag": "block",
+    "port": "",
+    "protocol": [],
+    "inboundTag": [],
+    "domain": [
+      "geosite:category-ads-all"
+    ],
+    "ip": [],
+    "enabled": true
+  },
+  {
+    "outboundTag": "direct",
+    "port": "",
+    "protocol": [],
+    "inboundTag": [],
+    "domain": [
+      "geosite:private",
+      "geosite:cn"
+    ],
+    "ip": [
+      "geoip:private",
+      "geoip:cn"
+    ],
+    "enabled": true
+  },
+  {
+    "outboundTag": "direct",
+    "port": "0-65535",
+    "protocol": [],
+    "inboundTag": [],
+    "domain": [],
+    "ip": [],
+    "enabled": true
+  }
+]

@@ -1,0 +1,78 @@
+# iMac Shadowrocket 配置指南(Apple Silicon)
+
+适用于 **Apple Silicon Mac(M1 / M2 / M3 / M4)**,如本项目用户的 M2 iMac。Shadowrocket 本是 iOS App,在 Apple Silicon Mac 上可直接安装运行。
+
+> 前提:你已在 Shadowrocket 里配好机场节点(本项目不管节点)。
+
+---
+
+## Apple Silicon Mac 专属安装方法
+
+1. 打开 **Mac App Store**,搜索 **Shadowrocket**。
+2. 搜索结果默认可能只显示 Mac App。点筛选 / 切换到 **「iPhone 与 iPad App」** 标签。
+3. 用与 iPhone **同款 Apple ID** 登录。由于已在 iPhone 端购买,这里可**已购免费安装**。
+4. 安装后在「启动台」里像普通 Mac App 一样打开。
+
+![Mac App Store iPhone/iPad App 筛选](images/sr-mac-appstore-filter.png)
+
+---
+
+## Intel Mac 的替代方案(简短)
+
+Intel(x86)Mac **无法**直接安装 iOS 版 Shadowrocket。建议:
+
+- 改用 **Stash**(Mac 原生,规则语法兼容)或 ClashX 等客户端;
+- 或考虑升级到 Apple Silicon 机型。
+
+本指南后续步骤以 Apple Silicon 为准。
+
+---
+
+## iOS App 在 Mac 上的交互特点
+
+iOS App 跑在 Mac 上时,**原本的触屏手势会映射成鼠标操作**:
+
+- 「点按」= 鼠标左键单击。
+- 「长按」= 按住鼠标左键不放。
+- 列表拖动排序 = 按住后拖拽。
+
+界面与 iPhone 版几乎一致,只是窗口化显示。
+
+---
+
+## 配置订阅
+
+把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
+
+```
+https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/proxy-list.txt
+```
+
+配置步骤与 iPhone 相同:
+
+1. 配置标签 → 添加规则集。
+2. 链接填上面的 raw URL,目标 **PROXY**,更新间隔 `86400`。
+3. **排序**:规则集放在 `GEOIP,CN` / `DIRECT` / `FINAL` 之前。
+
+详见 [setup-shadowrocket-iphone.md](setup-shadowrocket-iphone.md)。
+
+---
+
+## VPN 配置弹窗授权
+
+首次启用时,macOS 会弹出**「Shadowrocket 想要添加 VPN 配置」**的系统弹窗,点 **允许**,并用密码 / Touch ID 确认。
+
+---
+
+## 与 iPhone / iPad 通过 iCloud Sync 同步
+
+1. Shadowrocket → 设置 → **iCloud Sync** 打开。
+2. 三台设备用同一 Apple ID。
+
+之后任一端改配置,三端自动同步。
+
+---
+
+## 验证
+
+Safari 访问白名单网站(如 `claude.ai`)能打开即生效。问题见 [troubleshooting.md](troubleshooting.md)。

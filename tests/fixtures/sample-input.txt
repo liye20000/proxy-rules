@@ -1,0 +1,14 @@
+# 这是顶部注释
+# 用于测试
+
+# ===== 分组 1 =====
+example.com
+foo.com   # 这是行内注释
+
+# 空行测试
+
+duplicate.com
+DUPLICATE.com    # 测试大小写去重
+
+# ===== 分组 2 =====
+another.com

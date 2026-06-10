@@ -1,0 +1,51 @@
+[
+  {
+    "outboundTag": "proxy",
+    "port": "",
+    "protocol": [],
+    "inboundTag": [],
+    "domain": [
+      "domain:example.com",
+      "domain:foo.com",
+      "domain:duplicate.com",
+      "domain:another.com"
+    ],
+    "ip": [],
+    "enabled": true
+  },
+  {
+    "outboundTag": "block",
+    "port": "",
+    "protocol": [],
+    "inboundTag": [],
+    "domain": [
+      "geosite:category-ads-all"
+    ],
+    "ip": [],
+    "enabled": true
+  },
+  {
+    "outboundTag": "direct",
+    "port": "",
+    "protocol": [],
+    "inboundTag": [],
+    "domain": [
+      "geosite:private",
+      "geosite:cn"
+    ],
+    "ip": [
+      "geoip:private",
+      "geoip:cn"
+    ],
+    "enabled": true
+  },
+  {
+    "outboundTag": "direct",
+    "port": "0-65535",
+    "protocol": [],
+    "inboundTag": [],
+    "domain": [],
+    "ip": [],
+    "enabled": true
+  }
+]

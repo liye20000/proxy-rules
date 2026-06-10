@@ -1,0 +1,43 @@
+name: generate
+
+# 仅在主源或脚本/工作流自身改动时触发,避免 v2rayn-rules.json 改动再次触发(死循环)
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "proxy-list.txt"
+      - "generate.py"
+      - ".github/workflows/generate.yml"
+  workflow_dispatch:
+
+# 允许 Actions 把重新生成的 JSON 提交回仓库
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Generate v2rayn-rules.json
+        run: python generate.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet v2rayn-rules.json; then
+            echo "v2rayn-rules.json 无变化,跳过提交"
+          else
+            git add v2rayn-rules.json
+            git commit -m "auto: 重新生成 v2rayn-rules.json"
+            git push
+          fi
