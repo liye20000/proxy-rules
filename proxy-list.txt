@@ -65,3 +65,8 @@ bgstatic.com
 reddit.com
 redd.it
 redditstatic.com    
+
+
+# ===== Polymarket =====
+polymarket.com
+
