@@ -33,11 +33,11 @@
 
 ### 订阅 URL 拉不到内容
 
-确认 URL 结构(把占位符换成你的真实值):
+确认 URL 结构(下面已是你的真实地址):
 
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/v2rayn-rules.json
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.module
+https://raw.githubusercontent.com/liye20000/proxy-rules/main/v2rayn-rules.json
+https://raw.githubusercontent.com/liye20000/proxy-rules/main/shadowrocket.module
 ```
 
 - 用户名 / 仓库名拼写正确?

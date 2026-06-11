@@ -27,10 +27,10 @@
 
 ## 你需要的订阅 URL(模块)
 
-把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
+你的订阅 URL(可直接复制使用):
 
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.module
+https://raw.githubusercontent.com/liye20000/proxy-rules/main/shadowrocket.module
 ```
 
 > 这个模块**只含路由规则,不含任何节点 / 密码**。规则里的 `PROXY` 表示「走你在首页选中的那个节点」——节点仍然来自你机场那份配置。
@@ -110,7 +110,7 @@ https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.mo
 
 仅当你的**节点是通过「服务器订阅」单独添加**的(而不是机场给的整份配置),才可以用替换式配置:
 
-- URL:`https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.conf`
+- URL:`https://raw.githubusercontent.com/liye20000/proxy-rules/main/shadowrocket.conf`
 - 在 **「配置」** 页右上角 **「+」** 添加该 URL → 下载 → 在列表里**点选它**(出现 ✓ 表示正在使用)。
 - ⚠️ 注意:这会成为生效配置;若你的节点原本在别的配置里,会丢节点。**拿不准就用上面的「模块」方式。**
 

@@ -23,7 +23,7 @@
 1. 打开本项目仓库页面。
 2. 点右上角 **Use this template**(或 **Fork**)。
 3. 仓库名建议保持 `proxy-rules`,可见性选 **Public**(订阅 URL 需要无鉴权访问)。
-4. 创建完成后,你就有了自己的 `https://github.com/<你的用户名>/proxy-rules`。
+4. 创建完成后,你就有了自己的 `https://github.com/liye20000/proxy-rules`。
 
 ![创建仓库截图](images/quickstart-create-repo.png)
 
@@ -31,14 +31,14 @@
 
 ## 第二阶段:获取订阅 URL
 
-raw URL 的拼接方式(把 `YOUR_USERNAME` 换成你的 GitHub 用户名):
+以下是你的订阅 URL(已是真实地址,可直接复制使用):
 
 ```
 # V2RayN 专用(Windows 用)
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/v2rayn-rules.json
+https://raw.githubusercontent.com/liye20000/proxy-rules/main/v2rayn-rules.json
 
 # Shadowrocket 专用(iPhone / iPad / iMac 用)— 推荐「模块」
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.module
+https://raw.githubusercontent.com/liye20000/proxy-rules/main/shadowrocket.module
 ```
 
 > 注:`proxy-list.txt` 是你手动维护的**主源**,不直接给客户端订阅;客户端订阅上面由 Actions **自动生成**的派生文件。Shadowrocket 用 `.module`(叠加在机场配置上、不动节点);另有 `shadowrocket.conf` 备选,见各平台指南。

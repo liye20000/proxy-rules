@@ -24,7 +24,7 @@
 
 完整步骤:
 
-1. 任何浏览器(手机 / 电脑均可)打开 `https://github.com/<USERNAME>/proxy-rules`
+1. 任何浏览器(手机 / 电脑均可)打开 `https://github.com/liye20000/proxy-rules`
 2. 点击 `proxy-list.txt`
 3. 右上角铅笔图标 ✏️ → 进入编辑模式
 4. 滚到合适的分组(如 `# ===== Google =====`),加一行 / 删一行
@@ -77,7 +77,7 @@
 ### 标准 prompt 模板(每次新对话开头粘贴一次)
 
 ```
-我有一个 GitHub 仓库:https://github.com/<USERNAME>/proxy-rules
+我有一个 GitHub 仓库:https://github.com/liye20000/proxy-rules
 
 这是一个代理规则同步项目,主源是 proxy-list.txt(纯文本,
 每行一个域名),GitHub Actions 会自动生成 v2rayn-rules.json
@@ -97,7 +97,7 @@
 
 GitHub 鉴权(我开新会话时会粘贴):
 GitHub PAT: <你的 token>
-GitHub Username: <你的 username>
+GitHub Username: liye20000
 ```
 
 ### 典型对话示例

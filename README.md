@@ -2,7 +2,7 @@
 
 > 一处修改,四台设备(Windows PC / iMac / iPhone / iPad)自动同步代理路由规则。
 
-![GitHub Actions](https://github.com/YOUR_USERNAME/proxy-rules/actions/workflows/generate.yml/badge.svg)
+![GitHub Actions](https://github.com/liye20000/proxy-rules/actions/workflows/generate.yml/badge.svg)
 
 在 GitHub 上托管一份代理白名单数据源(`proxy-list.txt`),通过 GitHub Actions 自动转换成各客户端需要的规则格式。你只维护一份纯文本主源,所有平台自动同步。
 
@@ -123,17 +123,17 @@ proxy-rules/
 
 ## 🔗 订阅 URL 模板
 
-把 `YOUR_USERNAME` 替换成你的 GitHub 用户名:
+以下订阅 URL 已填好你的用户名 `liye20000`,可直接复制使用:
 
 ```
 # V2RayN 专用(Windows)
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/v2rayn-rules.json
+https://raw.githubusercontent.com/liye20000/proxy-rules/main/v2rayn-rules.json
 
 # Shadowrocket 专用(iPhone / iPad / iMac)— 推荐「模块」方式
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.module
+https://raw.githubusercontent.com/liye20000/proxy-rules/main/shadowrocket.module
 
 # Shadowrocket 备选「整份配置」方式(仅当节点来自独立的服务器订阅时)
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.conf
+https://raw.githubusercontent.com/liye20000/proxy-rules/main/shadowrocket.conf
 ```
 
 > `proxy-list.txt` 是给你**手动编辑的主源**,不直接作为客户端订阅;客户端订阅上面**自动生成**的派生文件。Shadowrocket 默认用 `.module`(叠加在机场配置上、不动节点),详见 [docs/setup-shadowrocket-iphone.md](docs/setup-shadowrocket-iphone.md)。

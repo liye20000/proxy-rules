@@ -14,7 +14,7 @@
 
 ## 2. 操作步骤(网页编辑,最常用)
 
-1. 浏览器打开 `https://github.com/<USERNAME>/proxy-rules`。
+1. 浏览器打开 `https://github.com/liye20000/proxy-rules`。
 2. 点击 `proxy-list.txt` 进入文件。
 3. 点右上角铅笔图标 ✏️ 进入编辑模式。
 4. 在合适的分组下加一行域名(或删一行)。

@@ -16,10 +16,10 @@ iPad 上的 Shadowrocket 是付费 App,但**与 iPhone 共享购买**:用与 iPh
 
 ## 你需要的订阅 URL(模块)
 
-把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
+你的订阅 URL(可直接复制使用):
 
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.module
+https://raw.githubusercontent.com/liye20000/proxy-rules/main/shadowrocket.module
 ```
 
 > 同 iPhone:这是一个**只含规则、不含节点**的 Shadowrocket **模块**,叠加在你机场配置之上、不动节点;`PROXY` 表示走你在首页选中的机场节点。

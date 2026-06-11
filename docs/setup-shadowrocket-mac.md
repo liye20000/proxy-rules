@@ -42,10 +42,10 @@ iOS App 跑在 Mac 上时,**原本的触屏手势会映射成鼠标操作**:
 
 ## 配置订阅
 
-本项目为 Shadowrocket 生成了专用**模块** `shadowrocket.module`(**只含规则,不含节点**,叠加在你机场配置上、不动节点)。把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
+本项目为 Shadowrocket 生成了专用**模块** `shadowrocket.module`(**只含规则,不含节点**,叠加在你机场配置上、不动节点)。你的订阅 URL(可直接复制使用):
 
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.module
+https://raw.githubusercontent.com/liye20000/proxy-rules/main/shadowrocket.module
 ```
 
 配置步骤与 iPhone 相同(注意:在 **「配置 → 模块」**,不是「设置」):

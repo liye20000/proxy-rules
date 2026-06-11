@@ -8,10 +8,10 @@
 
 ## 你需要的订阅 URL
 
-把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
+你的订阅 URL(可直接复制使用):
 
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/v2rayn-rules.json
+https://raw.githubusercontent.com/liye20000/proxy-rules/main/v2rayn-rules.json
 ```
 
 ---
