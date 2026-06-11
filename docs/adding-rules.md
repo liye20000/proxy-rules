@@ -6,9 +6,9 @@
 
 ## 1. 核心原则
 
-> **只改 `proxy-list.txt`,永远不要手动碰 `v2rayn-rules.json` 和 `shadowrocket.conf`。**
+> **只改 `proxy-list.txt`,永远不要手动碰 `v2rayn-rules.json` / `shadowrocket.module` / `shadowrocket.conf`。**
 
-`v2rayn-rules.json`(V2RayN 用)和 `shadowrocket.conf`(Shadowrocket 用)都是 GitHub Actions 根据 `proxy-list.txt` **自动生成**的。你手动改它们会在下次 Actions 运行时被覆盖。
+`v2rayn-rules.json`(V2RayN 用)、`shadowrocket.module` 和 `shadowrocket.conf`(Shadowrocket 用)都是 GitHub Actions 根据 `proxy-list.txt` **自动生成**的。你手动改它们会在下次 Actions 运行时被覆盖。
 
 ---
 

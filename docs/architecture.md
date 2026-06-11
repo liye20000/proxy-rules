@@ -14,17 +14,17 @@
                   │            ↓ generate.py         │
                   │   ┌────────────┴────────────┐    │
                   │   ↓                         ↓    │
-                  │ v2rayn-rules.json   shadowrocket.conf │
-                  │   (派生)                  (派生)  │
+                  │ v2rayn-rules.json   shadowrocket.module │
+                  │   (派生)              (派生,另有 .conf) │
                   └─────┬──────────────────────┬─────┘
                         │ HTTP 订阅(raw URL)   │
                         ↓                      ↓
-              ┌────────────────┐    ┌──────────────────┐
-              │ Windows V2RayN │    │  Apple 三端       │
-              │ 订阅:          │    │  Shadowrocket     │
-              │ v2rayn-rules   │    │  订阅:           │
-              │ .json          │    │  shadowrocket.conf│
-              └────────────────┘    └──────────────────┘
+              ┌────────────────┐    ┌──────────────────────┐
+              │ Windows V2RayN │    │  Apple 三端 Shadowrocket │
+              │ 订阅:          │    │  订阅:               │
+              │ v2rayn-rules   │    │  shadowrocket.module  │
+              │ .json          │    │  (模块,叠加不动节点)   │
+              └────────────────┘    └──────────────────────┘
 ```
 
 核心思路:**单一数据源(Single Source of Truth)+ 自动派生**。用户只维护 `proxy-list.txt`,各客户端需要的格式由 CI 自动生成。
@@ -38,14 +38,17 @@
 | 客户端 | 格式 | 订阅的文件 |
 |---|---|---|
 | V2RayN v6.x | Xray-core JSON(路由规则数组) | `v2rayn-rules.json` |
-| Shadowrocket | `.conf` 配置(`[General]` + `[Rule]`) | `shadowrocket.conf` |
+| Shadowrocket | 模块(`[Rule]`,叠加式,推荐) | `shadowrocket.module` |
+| Shadowrocket | 完整配置(`[General]` + `[Rule]`,替换式,备选) | `shadowrocket.conf` |
 
 - **V2RayN** 需要结构化的 JSON 路由规则。
-- **Shadowrocket** 需要一个含 `[Rule]` 段落的 `.conf` 配置;它**不能**直接订阅一个「每行一个域名」的纯文本(那只能作为某条规则引用的 `DOMAIN-SET`,无法单独成为订阅)。因此必须由 `generate.py` 生成一个完整的 `.conf`。
+- **Shadowrocket** 需要含 `[Rule]` 段落的配置或模块;它**不能**直接订阅一个「每行一个域名」的纯文本(那只能作为某条规则引用的 `DOMAIN-SET`,无法单独成为订阅)。因此必须由 `generate.py` 生成。
 
-> `shadowrocket.conf` **只含路由规则,不含任何节点 / 密码**。配置里的策略关键字 `PROXY` 表示「走用户在 Shadowrocket 首页选中的节点」,节点来自用户自己的机场订阅。这也是仓库可以保持 Public 的原因之一。
+**为什么 Shadowrocket 优先用「模块」而非「配置」**:用户的节点通常存在机场给的整份配置(如 `default.conf`)里。若用我们「只含规则、不含节点」的 `.conf` 去**替换**生效配置,节点会丢失。而**模块(module)会叠加**在当前配置之上、规则优先级更高,只改路由、不动节点——因此推荐 `shadowrocket.module`。`shadowrocket.conf` 仅作为「节点来自独立服务器订阅」场景的备选。
 
-所以主源 `proxy-list.txt` 本身不直接给客户端订阅,而是作为人类编辑的单一来源,派生出上面两个客户端可消费的文件。
+> 两者都**只含路由规则,不含任何节点 / 密码**。策略关键字 `PROXY` 表示「走用户在 Shadowrocket 首页选中的节点」,节点来自用户自己的机场。这也是仓库可以保持 Public 的原因之一。
+
+所以主源 `proxy-list.txt` 本身不直接给客户端订阅,而是作为人类编辑的单一来源,派生出客户端可消费的文件。
 
 ---
 
@@ -59,11 +62,10 @@
   2. **block**:`geosite:category-ads-all` → 拦截广告。
   3. **direct**:`geosite:private` / `geosite:cn` + `geoip:private` / `geoip:cn` → 国内与局域网直连。
   4. **direct 兜底**:`port: 0-65535` → 其余全部直连。
-- `generate_shadowrocket_conf(domains)`:生成 Shadowrocket `.conf` 文本(`[General]` + `[Rule]`):
-  1. 每个白名单域名一条 `DOMAIN-SUFFIX,xxx,PROXY`。
-  2. 私有网段 + `GEOIP,CN,DIRECT` → 局域网与国内直连。
-  3. `FINAL,DIRECT` → 兜底直连(白名单模式)。
-- `main()`:读文件 → 解析 → 同时写出 `v2rayn-rules.json`(2 空格缩进、`ensure_ascii=False`、末尾换行)与 `shadowrocket.conf`。
+- `_shadowrocket_rule_lines(domains)`:构造共用的 `[Rule]` 内容(白名单 `DOMAIN-SUFFIX,xxx,PROXY` + 私有网段/`GEOIP,CN,DIRECT` + `FINAL,DIRECT`),被下面两个函数复用。
+- `generate_shadowrocket_module(domains)`:生成 Shadowrocket **模块**(仅 `[Rule]`,叠加式,推荐)。
+- `generate_shadowrocket_conf(domains)`:生成 Shadowrocket **完整配置**(`[General]` + `[Rule]`,替换式,备选)。
+- `main()`:读文件 → 解析 → 同时写出 `v2rayn-rules.json`(2 空格缩进、`ensure_ascii=False`、末尾换行)、`shadowrocket.module` 与 `shadowrocket.conf`。
 
 错误处理:主源不存在、解析后域名为空都会打印错误并返回退出码 1。
 
@@ -77,9 +79,9 @@
 
 - **触发**:push 到 `main` 且改动命中 `proxy-list.txt` / `generate.py` / 工作流自身;或手动 `workflow_dispatch`。
 - **权限**:`contents: write`,允许 bot 提交回仓库。
-- **步骤**:checkout → 装 Python → 跑 `generate.py` → `git add` 两个派生文件后用 `git diff --cached --quiet` 判断是否有变化 → 有变化才以 `github-actions[bot]` 身份 commit & push。
+- **步骤**:checkout → 装 Python → 跑 `generate.py` → `git add` 三个派生文件后用 `git diff --cached --quiet` 判断是否有变化 → 有变化才以 `github-actions[bot]` 身份 commit & push。
 
-**防死循环**:工作流的 `paths` 过滤器**只监听 `proxy-list.txt` / `generate.py` / 工作流自身,不监听 `v2rayn-rules.json` / `shadowrocket.conf`**。所以 bot 提交生成结果不会再次触发自己。
+**防死循环**:工作流的 `paths` 过滤器**只监听 `proxy-list.txt` / `generate.py` / 工作流自身,不监听派生文件(`v2rayn-rules.json` / `shadowrocket.module` / `shadowrocket.conf`)**。所以 bot 提交生成结果不会再次触发自己。
 
 ---
 

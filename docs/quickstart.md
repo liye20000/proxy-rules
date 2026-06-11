@@ -37,11 +37,11 @@ raw URL 的拼接方式(把 `YOUR_USERNAME` 换成你的 GitHub 用户名):
 # V2RayN 专用(Windows 用)
 https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/v2rayn-rules.json
 
-# Shadowrocket 专用(iPhone / iPad / iMac 用)
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.conf
+# Shadowrocket 专用(iPhone / iPad / iMac 用)— 推荐「模块」
+https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.module
 ```
 
-> 注:`proxy-list.txt` 是你手动维护的**主源**,不直接给客户端订阅;客户端订阅上面两个由 Actions **自动生成**的派生文件。
+> 注:`proxy-list.txt` 是你手动维护的**主源**,不直接给客户端订阅;客户端订阅上面由 Actions **自动生成**的派生文件。Shadowrocket 用 `.module`(叠加在机场配置上、不动节点);另有 `shadowrocket.conf` 备选,见各平台指南。
 
 **验证 URL 可用**:把上面两个 URL 直接粘到浏览器打开,应该能看到 JSON / 配置文本内容。看不到内容请见 [troubleshooting.md](troubleshooting.md)。
 

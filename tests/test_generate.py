@@ -129,6 +129,37 @@ def test_shadowrocket_conf_contains_no_node_info():
     assert "[Proxy Group]" not in conf
 
 
+# ---------- generate_shadowrocket_module ----------
+
+def test_shadowrocket_module_is_rule_only_overlay():
+    """模块为叠加式:只含 [Rule],不含 [General](不改动底层通用设置)。"""
+    mod = generate.generate_shadowrocket_module(["a.com"])
+    assert "#!name=" in mod
+    assert "[Rule]" in mod
+    assert "[General]" not in mod
+    assert "[Proxy]" not in mod
+
+
+def test_shadowrocket_module_routes_domains_and_has_final():
+    """模块把白名单域名指向 PROXY,并以 FINAL,DIRECT 收尾(严格白名单)。"""
+    mod = generate.generate_shadowrocket_module(["a.com", "b.com"])
+    assert "DOMAIN-SUFFIX,a.com,PROXY" in mod
+    assert "DOMAIN-SUFFIX,b.com,PROXY" in mod
+    assert "GEOIP,CN,DIRECT" in mod
+    assert mod.strip().splitlines()[-1] == "FINAL,DIRECT"
+
+
+def test_shadowrocket_conf_and_module_share_same_rules():
+    """conf 与 module 的规则主体一致(共用同一套规则生成逻辑)。"""
+    domains = ["a.com", "b.com"]
+    rule_lines = generate._shadowrocket_rule_lines(domains)
+    conf = generate.generate_shadowrocket_conf(domains)
+    mod = generate.generate_shadowrocket_module(domains)
+    for line in rule_lines:
+        assert line in conf
+        assert line in mod
+
+
 # ---------- 端到端 ----------
 
 def test_end_to_end_matches_expected_fixture():

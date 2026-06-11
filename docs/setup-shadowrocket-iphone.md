@@ -1,56 +1,58 @@
 # iPhone Shadowrocket 配置指南
 
-适用于 **iPhone 上的 Shadowrocket(小火箭)**,本指南基于 **2.2.x** 版本界面。
+适用于 **iPhone 上的 Shadowrocket(小火箭)**,基于 **2.2.x** 版本界面。
 
-> 前提:你已在 Shadowrocket 里配好机场节点(本项目不管节点)。
-
-> ⚠️ **重要更正**:规则**不在「设置」里**。早期版本的本文档让你去「设置」找规则区域,这是错的——「设置」底部只有「**服务器订阅**」(那是给机场节点用的)。本项目的规则要在 **「配置 / 远程文件」** 里添加。下面是正确流程。
+> 前提:你已在 Shadowrocket 里能正常用机场节点上网(本项目不管节点)。
 
 ---
 
-## 你需要的订阅 URL
+## ⚠️ 先搞清楚两个概念,别走弯路
 
-本项目为 Shadowrocket 生成了一个专用配置文件 `shadowrocket.conf`(**只含路由规则,不含任何节点信息**)。把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
+1. **规则不在「设置」里**。底部有四个标签:**首页 / 配置 / 数据 / 设置**。本项目的规则在 **「配置」** 标签里,不是「设置」。
+2. **优先用「模块」叠加,不要「替换配置」**。你机场给你的那份配置(通常叫 `default.conf`,文件较大)**里面含有你的全部节点**。如果你把节点直接换成本项目那种「只有规则、没有节点」的配置,**节点会消失**。
+   所以正确做法是:把本项目规则作为一个 **「模块」** 叠加上去——**只改路由、不动节点**。
+
+---
+
+## 你需要的订阅 URL(模块)
+
+把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
 
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.conf
+https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.module
 ```
 
-> 这个文件只决定「哪些域名走代理、哪些直连」。规则里的 **`PROXY`** 表示**走你在首页选中的那个节点**——节点仍然来自你的机场订阅,这个配置里没有也不需要任何节点 / 密码。
+> 这个模块**只含路由规则,不含任何节点 / 密码**。规则里的 `PROXY` 表示「走你在首页选中的那个节点」——节点仍然来自你机场那份配置。
 
 ---
 
-## 步骤 1:进入「配置 → 远程文件」
+## 步骤 1:进入「配置 → 模块」
 
-1. 打开 Shadowrocket。
-2. 进入 **「配置」(Configuration)** 管理界面 → 选 **「远程文件」(Remote File)** 这一类。
+1. 打开 Shadowrocket,点底部 **「配置」** 标签。
+2. 在上方那张卡片里点 **「模块」(`{>-}` 图标)**。
 
-> 注:不同小版本里,「配置」可能在底部标签,也可能在首页内的配置区。认准 **「远程文件 / Remote File」** 这个入口即可,**不要**去「设置」。
-
-![配置-远程文件入口](images/sr-iphone-config-tab.png)
+![配置-模块入口](images/sr-iphone-config-tab.png)
 
 ---
 
-## 步骤 2:添加远程配置(粘贴 URL)
+## 步骤 2:添加远程模块(粘贴 URL)
 
-1. 点右上角 **「+」**(加号)。
-2. 在 **URL / 链接** 处粘贴上面那条 `shadowrocket.conf` 的 raw URL。
-3. 备注(可选)填 `proxy-rules`。
-4. 点 **「下载」/ 保存**。下载成功后,配置列表里会出现 `proxy-rules 白名单分流`。
+1. 在「模块」页右上角点 **「+」**。
+2. 选 **「远程模块 / 来自 URL」**,把上面的 `shadowrocket.module` URL 粘进去。
+3. 点 **下载 / 完成**。成功后模块列表里会出现 **「proxy-rules 白名单分流」** 并**打开(启用)**它。
 
-![添加远程配置](images/sr-iphone-add-ruleset.png)
+> 模块是按 `#!name=` 显示的,所以这里你能看到「proxy-rules 白名单分流」这个名字。
+
+![添加远程模块](images/sr-iphone-add-ruleset.png)
 
 ---
 
-## 步骤 3:选中该配置 + 选好节点 + 路由设为「配置」
+## 步骤 3:首页选节点 + 路由设为「配置」
 
-要让规则真正生效,三件事都要到位:
+1. 回到 **「首页」**,在机场节点列表里**选中一个要用的节点**(规则里的 `PROXY` 就指向它)。
+2. 首页顶部的 **「全局路由」** 设为 **「配置」**(只有这个模式才会按规则分流;「代理」=全部走代理,「直连」=全部直连)。
 
-1. **选中配置**:在配置列表里点一下 `proxy-rules 白名单分流`,把它设为当前生效的配置(左侧出现勾选标记)。
-2. **选好节点**:回到 **首页**,在你的机场节点列表里选中一个要使用的节点。
-3. **路由模式设为「配置」**:首页顶部的 **「全局路由」(Global Routing)** 设为 **「配置」(Configuration)** —— 只有这个模式才会按本规则分流(另两个选项「代理 / 直连」会忽略规则,全部走代理或全部直连)。
-
-> 规则里的 `PROXY` 就会指向你刚选中的那个节点。
+> 你机场原来的配置(`default.conf`)保持**生效不变**,模块只是叠加在它之上、优先生效。节点不受影响。
 
 ---
 
@@ -63,14 +65,24 @@ https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.co
 
 ## 步骤 5:验证
 
-用 Safari 访问一个白名单网站(如 `claude.ai` 或 `youtube.com`),能正常打开即生效。
-
-确认走的策略:Shadowrocket 首页 → 点开 **「连接 / 全局路由」** 详情,看目标域名命中的是不是 `PROXY`;访问一个国内网站(如 `baidu.com`)应命中 `DIRECT`。
+- 访问白名单网站(如 `claude.ai` / `youtube.com`)→ 能打开,且走代理。
+- 访问国内网站(如 `baidu.com`)→ 正常,走直连。
+- 想看判定:首页 → **「数据」** 标签可看到实时连接,目标域名命中的策略应是 `PROXY` 或 `DIRECT`。
 
 ---
 
 ## 更新规则
 
-之后你在 GitHub 改了 `proxy-list.txt`,Actions 会自动重新生成 `shadowrocket.conf`。Shadowrocket 端让配置生效最新版:在「配置 / 远程文件」里对 `proxy-rules` 这条做一次 **更新 / 刷新**(下拉或点更新按钮),再断开重连一次即可。
+之后你在 GitHub 改了 `proxy-list.txt`,Actions 会自动重新生成 `shadowrocket.module`。手机端在 **「配置 → 模块」** 里对 `proxy-rules` 这条做一次 **更新 / 刷新**(下拉刷新或点更新),再断开重连一次即可。
+
+---
+
+## 备选:用整份配置替换(一般用不到)
+
+仅当你的**节点是通过「服务器订阅」单独添加**的(而不是机场给的整份配置),才可以用替换式配置:
+
+- URL:`https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.conf`
+- 在 **「配置」** 页右上角 **「+」** 添加该 URL → 下载 → 在列表里**点选它**(出现 ✓ 表示正在使用)。
+- ⚠️ 注意:这会成为生效配置;若你的节点原本在别的配置里,会丢节点。**拿不准就用上面的「模块」方式。**
 
 遇到问题见 [troubleshooting.md](troubleshooting.md)。

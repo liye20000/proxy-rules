@@ -69,11 +69,13 @@
                           │ generate.py
             ┌─────────────┴─────────────┐
             ↓                           ↓
-   v2rayn-rules.json (派生)      shadowrocket.conf (派生)
-            │ V2RayN 订阅                │ Shadowrocket 订阅
+   v2rayn-rules.json (派生)      shadowrocket.module (派生)
+            │ V2RayN 订阅                │ Shadowrocket 模块订阅
             ↓                           ↓
        Windows PC                iPhone / iPad / iMac
 ```
+
+> 另有 `shadowrocket.conf`(整份配置,替换式)作为备选;Apple 端**默认推荐用 `.module`**(叠加式,不动机场节点)。
 
 ---
 
@@ -86,8 +88,9 @@ proxy-rules/
 ├── .gitignore                # Python 标准 gitignore
 ├── proxy-list.txt            # 主源:代理白名单(你唯一需要手动改的文件)
 ├── v2rayn-rules.json         # 派生:V2RayN 规则(Actions 自动生成,勿手动改)
-├── shadowrocket.conf         # 派生:Shadowrocket 配置(Actions 自动生成,勿手动改)
-├── generate.py               # 转换脚本(txt → json + conf)
+├── shadowrocket.module       # 派生:Shadowrocket 模块(推荐,叠加式;Actions 生成)
+├── shadowrocket.conf         # 派生:Shadowrocket 配置(备选,替换式;Actions 生成)
+├── generate.py               # 转换脚本(txt → json + module + conf)
 ├── .github/workflows/
 │   └── generate.yml          # GitHub Actions 配置
 ├── tests/                    # generate.py 的单元测试
@@ -112,7 +115,7 @@ proxy-rules/
 
 ## ➕ 如何添加新规则
 
-最常见的动作:只改 `proxy-list.txt`,**不要碰自动生成的 `v2rayn-rules.json` 和 `shadowrocket.conf`**。在 GitHub 网页打开 `proxy-list.txt` → 铅笔图标编辑 → 在合适的分组加一行域名 → Commit。约 30 秒后 Actions 自动重新生成两个派生文件,各设备下次拉取订阅时同步。
+最常见的动作:只改 `proxy-list.txt`,**不要碰自动生成的 `v2rayn-rules.json` / `shadowrocket.module` / `shadowrocket.conf`**。在 GitHub 网页打开 `proxy-list.txt` → 铅笔图标编辑 → 在合适的分组加一行域名 → Commit。约 30 秒后 Actions 自动重新生成派生文件,各设备下次拉取订阅时同步。
 
 详见 [docs/adding-rules.md](docs/adding-rules.md) 与 [docs/daily-ops.md](docs/daily-ops.md)。
 
@@ -126,11 +129,14 @@ proxy-rules/
 # V2RayN 专用(Windows)
 https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/v2rayn-rules.json
 
-# Shadowrocket 专用(iPhone / iPad / iMac)
+# Shadowrocket 专用(iPhone / iPad / iMac)— 推荐「模块」方式
+https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.module
+
+# Shadowrocket 备选「整份配置」方式(仅当节点来自独立的服务器订阅时)
 https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.conf
 ```
 
-> `proxy-list.txt` 是给你**手动编辑的主源**,不直接作为客户端订阅;客户端订阅上面两个**自动生成**的派生文件。
+> `proxy-list.txt` 是给你**手动编辑的主源**,不直接作为客户端订阅;客户端订阅上面**自动生成**的派生文件。Shadowrocket 默认用 `.module`(叠加在机场配置上、不动节点),详见 [docs/setup-shadowrocket-iphone.md](docs/setup-shadowrocket-iphone.md)。
 
 ---
 

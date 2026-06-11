@@ -19,8 +19,9 @@ from pathlib import Path
 # 主源文件与派生文件的路径(相对脚本所在目录,避免硬编码绝对路径)
 BASE_DIR = Path(__file__).resolve().parent
 INPUT_FILE = BASE_DIR / "proxy-list.txt"
-OUTPUT_FILE = BASE_DIR / "v2rayn-rules.json"        # 派生:V2RayN(Xray-core)规则
-OUTPUT_SR_FILE = BASE_DIR / "shadowrocket.conf"     # 派生:Shadowrocket 配置(仅规则,不含节点)
+OUTPUT_FILE = BASE_DIR / "v2rayn-rules.json"            # 派生:V2RayN(Xray-core)规则
+OUTPUT_SR_CONF = BASE_DIR / "shadowrocket.conf"         # 派生:Shadowrocket 完整配置(替换式,仅规则)
+OUTPUT_SR_MODULE = BASE_DIR / "shadowrocket.module"     # 派生:Shadowrocket 模块(叠加式,推荐)
 
 # 域名基本格式校验:由字母/数字/连字符组成的标签,用点分隔,至少含一个点。
 DOMAIN_PATTERN = re.compile(r"^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$")
@@ -116,19 +117,36 @@ def generate_v2rayn_rules(domains: list[str]) -> list[dict]:
     ]
 
 
-def generate_shadowrocket_conf(domains: list[str]) -> str:
-    """根据域名列表生成 Shadowrocket 配置文件文本(仅规则,不含任何节点)。
-
-    生成的是一个 Shadowrocket「远程文件」配置,只包含 ``[General]`` 与 ``[Rule]``:
+def _shadowrocket_rule_lines(domains: list[str]) -> list[str]:
+    """构造 Shadowrocket ``[Rule]`` 段落的内容行(白名单分流,被 conf 与 module 共用)。
 
     - 代理白名单:每个域名一条 ``DOMAIN-SUFFIX,xxx,PROXY``。
-      ``PROXY`` 是 Shadowrocket 的特殊策略,表示「走当前选中的节点」——
-      节点来自用户自己的机场订阅,本文件**不含**任何节点 / 密码 / 机场信息。
+      ``PROXY`` 是 Shadowrocket 的特殊策略,表示「走当前选中的节点」。
     - 局域网与国内直连:私有网段 + ``GEOIP,CN,DIRECT``。
-    - 兜底:``FINAL,DIRECT``,其余全部直连(白名单模式)。
+    - 兜底:``FINAL,DIRECT``,其余全部直连(严格白名单)。
 
-    Shadowrocket 规则自上而下匹配、首条命中即生效,因此白名单(PROXY)放在最前,
-    兜底(FINAL,DIRECT)放在最后。
+    规则自上而下匹配、首条命中即生效,因此白名单(PROXY)在最前,兜底(DIRECT)在最后。
+    """
+    lines = ["# ===== 代理白名单(PROXY = 你在首页选中的节点)====="]
+    lines += [f"DOMAIN-SUFFIX,{d},PROXY" for d in domains]
+    lines += [
+        "# ===== 局域网与国内直连 =====",
+        "IP-CIDR,192.168.0.0/16,DIRECT",
+        "IP-CIDR,10.0.0.0/8,DIRECT",
+        "IP-CIDR,172.16.0.0/12,DIRECT",
+        "GEOIP,CN,DIRECT",
+        "# ===== 兜底:其余全部直连(严格白名单)=====",
+        "FINAL,DIRECT",
+    ]
+    return lines
+
+
+def generate_shadowrocket_conf(domains: list[str]) -> str:
+    """生成 Shadowrocket 完整配置(``[General]`` + ``[Rule]``,不含任何节点)。
+
+    用于「替换整份配置」的场景——仅当用户的节点来自独立的「服务器订阅」、
+    而非机场给的整份配置时使用。配置中**不含**任何节点 / 密码 / 机场信息;
+    ``PROXY`` 指向用户在首页选中的节点。
 
     :param domains: 已清洗的域名列表
     :return: 完整的 .conf 文本(以换行符结尾)
@@ -143,18 +161,32 @@ def generate_shadowrocket_conf(domains: list[str]) -> str:
         "dns-server = system",
         "",
         "[Rule]",
-        "# ===== 代理白名单(PROXY = 你在首页选中的节点)=====",
     ]
-    lines += [f"DOMAIN-SUFFIX,{d},PROXY" for d in domains]
-    lines += [
-        "# ===== 局域网与国内直连 =====",
-        "IP-CIDR,192.168.0.0/16,DIRECT",
-        "IP-CIDR,10.0.0.0/8,DIRECT",
-        "IP-CIDR,172.16.0.0/12,DIRECT",
-        "GEOIP,CN,DIRECT",
-        "# ===== 兜底:其余全部直连 =====",
-        "FINAL,DIRECT",
+    lines += _shadowrocket_rule_lines(domains)
+    return "\n".join(lines) + "\n"
+
+
+def generate_shadowrocket_module(domains: list[str]) -> str:
+    """生成 Shadowrocket 模块(仅 ``[Rule]``,不含任何节点)。
+
+    **推荐方式**:模块会**叠加**在用户当前生效的配置(通常是机场给的整份配置)之上,
+    只覆盖路由规则、**不动节点**——因此节点信息原样保留在机场配置里。
+    模块中的规则优先级高于配置中的规则。
+
+    模块只包含 ``[Rule]``(白名单 → PROXY、国内/局域网 → DIRECT、其余 → DIRECT),
+    构成一套完整的白名单路由;底层机场配置仅用于提供节点。
+    本文件同样**不含**任何节点 / 密码 / 机场信息。
+
+    :param domains: 已清洗的域名列表
+    :return: 完整的 .module 文本(以换行符结尾)
+    """
+    lines: list[str] = [
+        "#!name=proxy-rules 白名单分流",
+        "#!desc=把白名单域名走代理、其余直连;作为模块叠加在你的机场配置之上,只改路由不动节点。",
+        "",
+        "[Rule]",
     ]
+    lines += _shadowrocket_rule_lines(domains)
     return "\n".join(lines) + "\n"
 
 
@@ -181,13 +213,14 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    # 2) Shadowrocket 配置(仅规则,不含节点)
-    conf = generate_shadowrocket_conf(domains)
-    OUTPUT_SR_FILE.write_text(conf, encoding="utf-8")
+    # 2) Shadowrocket 模块(推荐:叠加式,不动节点)与完整配置(替换式备选),均不含节点
+    OUTPUT_SR_MODULE.write_text(generate_shadowrocket_module(domains), encoding="utf-8")
+    OUTPUT_SR_CONF.write_text(generate_shadowrocket_conf(domains), encoding="utf-8")
 
     print(
         f"成功:从 {len(domains)} 个域名生成 "
-        f"{OUTPUT_FILE.name}(共 {len(rules)} 条规则)与 {OUTPUT_SR_FILE.name}"
+        f"{OUTPUT_FILE.name}(共 {len(rules)} 条规则)、"
+        f"{OUTPUT_SR_MODULE.name} 与 {OUTPUT_SR_CONF.name}"
     )
     return 0
 

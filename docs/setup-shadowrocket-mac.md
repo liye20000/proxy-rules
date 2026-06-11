@@ -42,19 +42,18 @@ iOS App 跑在 Mac 上时,**原本的触屏手势会映射成鼠标操作**:
 
 ## 配置订阅
 
-本项目为 Shadowrocket 生成了专用配置 `shadowrocket.conf`(**只含规则,不含节点**)。把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
+本项目为 Shadowrocket 生成了专用**模块** `shadowrocket.module`(**只含规则,不含节点**,叠加在你机场配置上、不动节点)。把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
 
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.conf
+https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.module
 ```
 
-配置步骤与 iPhone 相同(注意:在 **「配置 → 远程文件」**,不是「设置」):
+配置步骤与 iPhone 相同(注意:在 **「配置 → 模块」**,不是「设置」):
 
-1. **「配置」→「远程文件」** → 右上角 **「+」** → 粘贴上面的 raw URL → **下载**。
-2. 选中 `proxy-rules 白名单分流` 配置。
-3. 首页选好节点 → 首页顶部 **「全局路由」设为「配置」**。
+1. **「配置」→「模块」** → 右上角 **「+」** → 粘贴上面的 raw URL → **下载** → 启用模块。
+2. 首页选好节点 → 首页顶部 **「全局路由」设为「配置」**。
 
-详见 [setup-shadowrocket-iphone.md](setup-shadowrocket-iphone.md)。
+详见 [setup-shadowrocket-iphone.md](setup-shadowrocket-iphone.md)(含「为什么用模块而不是替换配置」)。
 
 ---
 
