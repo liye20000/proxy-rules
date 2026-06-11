@@ -47,7 +47,8 @@
       "domain:bgstatic.com",
       "domain:reddit.com",
       "domain:redd.it",
-      "domain:redditstatic.com"
+      "domain:redditstatic.com",
+      "domain:polymarket.com"
     ],
     "ip": [],
     "enabled": true
