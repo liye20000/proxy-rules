@@ -44,7 +44,10 @@
       "domain:binancezh.com",
       "domain:bn-files.com",
       "domain:bitget.com",
-      "domain:bgstatic.com"
+      "domain:bgstatic.com",
+      "domain:reddit.com",
+      "domain:redd.it",
+      "domain:redditstatic.com"
     ],
     "ip": [],
     "enabled": true

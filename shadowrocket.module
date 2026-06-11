@@ -43,6 +43,9 @@ DOMAIN-SUFFIX,binancezh.com,PROXY
 DOMAIN-SUFFIX,bn-files.com,PROXY
 DOMAIN-SUFFIX,bitget.com,PROXY
 DOMAIN-SUFFIX,bgstatic.com,PROXY
+DOMAIN-SUFFIX,reddit.com,PROXY
+DOMAIN-SUFFIX,redd.it,PROXY
+DOMAIN-SUFFIX,redditstatic.com,PROXY
 # ===== 局域网与国内直连 =====
 IP-CIDR,192.168.0.0/16,DIRECT
 IP-CIDR,10.0.0.0/8,DIRECT
