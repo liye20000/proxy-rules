@@ -9,9 +9,12 @@
 | 症状 | 可能原因 | 解决 |
 |---|---|---|
 | Actions 跑失败,红色 ❌ | 权限不够 / 脚本异常 | 检查 **Settings → Actions → General → Workflow permissions** 设为 **Read and write**;再看运行日志定位脚本错误 |
-| Actions 跑成功但没有新 commit | JSON 没变化(预期行为) | 不是问题。只有 `proxy-list.txt` 实际改动导致 JSON 变化时才会自动提交 |
-| V2RayN 订阅 URL 拉不到内容 | URL 拼错 / 网络问题 | 浏览器直接打开该 raw URL,确认能看到 JSON;检查用户名 / 仓库名 / 分支名 |
-| Shadowrocket 规则集订阅后规则数为 0 | URL 错误 / 文件为空 | 浏览器直接打开 `proxy-list.txt` raw URL 检查是否有内容 |
+| Actions 跑成功但没有新 commit | 派生文件没变化(预期行为) | 不是问题。只有 `proxy-list.txt` 实际改动导致派生文件变化时才会自动提交 |
+| 订阅 URL 拉不到内容 | URL 拼错 / 网络问题 | 浏览器直接打开该 raw URL,确认能看到内容;检查用户名 / 仓库名 / 分支名 |
+| 在 Shadowrocket「设置」里找不到规则 | 找错地方了 | 规则**不在「设置」**;在 **「配置 → 远程文件」** 添加 `shadowrocket.conf`,见 [setup-shadowrocket-iphone.md](setup-shadowrocket-iphone.md) |
+| Shadowrocket 加了配置但所有网站都直连 | 没选中配置 / 路由模式不对 | 选中 `proxy-rules` 配置,并把首页「全局路由」设为 **「配置」**(不是「直连」) |
+| Shadowrocket 白名单网站连不上 | 没选节点 / 节点失效 | 首页选中一个机场节点(规则里的 `PROXY` = 选中的节点);节点失效就换一个 |
+| 开了小火箭后国内 App(银行 / 网上国网等)打不开 | 代理类型干扰 | Shadowrocket → 设置 → 代理,把代理类型从 `http` 改为 `none`(tun 模式) |
 | 某网站没走代理 | 域名不在白名单 / 规则未刷新 | 在 `proxy-list.txt` 添加该域名;手动刷新客户端订阅 |
 | Claude Code / curl 报 `ECONNRESET` | 代理节点不稳定 | 换节点,与本项目无关 |
 | Cloudflare 返回 `403` | 代理节点 IP 被风控 | 换节点,与本项目无关 |
@@ -31,8 +34,8 @@
 确认 URL 结构(把占位符换成你的真实值):
 
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/proxy-list.txt
 https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/v2rayn-rules.json
+https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.conf
 ```
 
 - 用户名 / 仓库名拼写正确?
@@ -42,8 +45,8 @@ https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/v2rayn-rules.js
 ### 改了规则但客户端没更新
 
 - **V2RayN 默认手动更新订阅**——需要你手动点一次「更新订阅」。
-- Shadowrocket 按更新间隔自动拉,等待周期或手动刷新。
-- 确认 Actions 已经跑完并生成了新 JSON(绿色 ✅)。
+- Shadowrocket 在「配置 → 远程文件」里对 `proxy-rules` 做一次更新 / 刷新,再断开重连一次。
+- 确认 Actions 已经跑完并生成了新派生文件(绿色 ✅)。
 
 ### 多设备同时改冲突
 

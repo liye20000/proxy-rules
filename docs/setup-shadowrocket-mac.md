@@ -42,17 +42,17 @@ iOS App 跑在 Mac 上时,**原本的触屏手势会映射成鼠标操作**:
 
 ## 配置订阅
 
-把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
+本项目为 Shadowrocket 生成了专用配置 `shadowrocket.conf`(**只含规则,不含节点**)。把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
 
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/proxy-list.txt
+https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.conf
 ```
 
-配置步骤与 iPhone 相同:
+配置步骤与 iPhone 相同(注意:在 **「配置 → 远程文件」**,不是「设置」):
 
-1. 配置标签 → 添加规则集。
-2. 链接填上面的 raw URL,目标 **PROXY**,更新间隔 `86400`。
-3. **排序**:规则集放在 `GEOIP,CN` / `DIRECT` / `FINAL` 之前。
+1. **「配置」→「远程文件」** → 右上角 **「+」** → 粘贴上面的 raw URL → **下载**。
+2. 选中 `proxy-rules 白名单分流` 配置。
+3. 首页选好节点 → 首页顶部 **「全局路由」设为「配置」**。
 
 详见 [setup-shadowrocket-iphone.md](setup-shadowrocket-iphone.md)。
 
@@ -69,7 +69,7 @@ https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/proxy-list.txt
 1. Shadowrocket → 设置 → **iCloud Sync** 打开。
 2. 三台设备用同一 Apple ID。
 
-之后任一端改配置,三端自动同步。
+之后任一端改配置,三端自动同步;每台设备各自选一次要用的节点即可。
 
 ---
 

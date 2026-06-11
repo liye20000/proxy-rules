@@ -27,17 +27,17 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Generate v2rayn-rules.json
+      - name: Generate rule files
         run: python generate.py
 
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet v2rayn-rules.json; then
-            echo "v2rayn-rules.json 无变化,跳过提交"
+          git add v2rayn-rules.json shadowrocket.conf
+          if git diff --cached --quiet; then
+            echo "生成结果无变化,跳过提交"
           else
-            git add v2rayn-rules.json
-            git commit -m "auto: 重新生成 v2rayn-rules.json"
+            git commit -m "auto: 重新生成规则文件(v2rayn-rules.json / shadowrocket.conf)"
             git push
           fi

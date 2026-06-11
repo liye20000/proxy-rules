@@ -19,7 +19,8 @@ from pathlib import Path
 # 主源文件与派生文件的路径(相对脚本所在目录,避免硬编码绝对路径)
 BASE_DIR = Path(__file__).resolve().parent
 INPUT_FILE = BASE_DIR / "proxy-list.txt"
-OUTPUT_FILE = BASE_DIR / "v2rayn-rules.json"
+OUTPUT_FILE = BASE_DIR / "v2rayn-rules.json"        # 派生:V2RayN(Xray-core)规则
+OUTPUT_SR_FILE = BASE_DIR / "shadowrocket.conf"     # 派生:Shadowrocket 配置(仅规则,不含节点)
 
 # 域名基本格式校验:由字母/数字/连字符组成的标签,用点分隔,至少含一个点。
 DOMAIN_PATTERN = re.compile(r"^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$")
@@ -115,8 +116,50 @@ def generate_v2rayn_rules(domains: list[str]) -> list[dict]:
     ]
 
 
+def generate_shadowrocket_conf(domains: list[str]) -> str:
+    """根据域名列表生成 Shadowrocket 配置文件文本(仅规则,不含任何节点)。
+
+    生成的是一个 Shadowrocket「远程文件」配置,只包含 ``[General]`` 与 ``[Rule]``:
+
+    - 代理白名单:每个域名一条 ``DOMAIN-SUFFIX,xxx,PROXY``。
+      ``PROXY`` 是 Shadowrocket 的特殊策略,表示「走当前选中的节点」——
+      节点来自用户自己的机场订阅,本文件**不含**任何节点 / 密码 / 机场信息。
+    - 局域网与国内直连:私有网段 + ``GEOIP,CN,DIRECT``。
+    - 兜底:``FINAL,DIRECT``,其余全部直连(白名单模式)。
+
+    Shadowrocket 规则自上而下匹配、首条命中即生效,因此白名单(PROXY)放在最前,
+    兜底(FINAL,DIRECT)放在最后。
+
+    :param domains: 已清洗的域名列表
+    :return: 完整的 .conf 文本(以换行符结尾)
+    """
+    lines: list[str] = [
+        "#!name=proxy-rules 白名单分流",
+        "#!desc=只把白名单域名走代理,其余直连;节点由你的机场订阅提供,本文件不含任何节点信息。",
+        "",
+        "[General]",
+        "bypass-system = true",
+        "skip-proxy = 127.0.0.1, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 100.64.0.0/10, localhost, *.local",
+        "dns-server = system",
+        "",
+        "[Rule]",
+        "# ===== 代理白名单(PROXY = 你在首页选中的节点)=====",
+    ]
+    lines += [f"DOMAIN-SUFFIX,{d},PROXY" for d in domains]
+    lines += [
+        "# ===== 局域网与国内直连 =====",
+        "IP-CIDR,192.168.0.0/16,DIRECT",
+        "IP-CIDR,10.0.0.0/8,DIRECT",
+        "IP-CIDR,172.16.0.0/12,DIRECT",
+        "GEOIP,CN,DIRECT",
+        "# ===== 兜底:其余全部直连 =====",
+        "FINAL,DIRECT",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
-    """主入口。读取主源、生成规则、写出 JSON。
+    """主入口。读取主源、生成规则、写出派生文件。
 
     :return: 成功返回 0,失败返回 1
     """
@@ -131,15 +174,21 @@ def main() -> int:
         print("错误:解析后没有任何有效域名,请检查 proxy-list.txt", file=sys.stderr)
         return 1
 
+    # 1) V2RayN JSON:2 空格缩进,允许 UTF-8 字符,文件末尾保留一个换行符
     rules = generate_v2rayn_rules(domains)
-
-    # JSON 输出:2 空格缩进,允许 UTF-8 字符,文件末尾保留一个换行符
     OUTPUT_FILE.write_text(
         json.dumps(rules, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
 
-    print(f"成功:从 {len(domains)} 个域名生成 {OUTPUT_FILE.name}(共 {len(rules)} 条规则)")
+    # 2) Shadowrocket 配置(仅规则,不含节点)
+    conf = generate_shadowrocket_conf(domains)
+    OUTPUT_SR_FILE.write_text(conf, encoding="utf-8")
+
+    print(
+        f"成功:从 {len(domains)} 个域名生成 "
+        f"{OUTPUT_FILE.name}(共 {len(rules)} 条规则)与 {OUTPUT_SR_FILE.name}"
+    )
     return 0
 
 

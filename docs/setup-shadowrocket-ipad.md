@@ -1,6 +1,6 @@
 # iPad Shadowrocket 配置指南
 
-适用于 **iPad 上的 Shadowrocket(小火箭)**。配置逻辑与 iPhone 完全一致,本文重点说明 iPad 上的两种配置方式。
+适用于 **iPad 上的 Shadowrocket(小火箭)**。配置逻辑与 iPhone 完全一致,本文重点说明 iPad 上的安装与两种配置方式。
 
 > 前提:你已在 Shadowrocket 里配好机场节点(本项目不管节点)。
 
@@ -19,43 +19,32 @@ iPad 上的 Shadowrocket 是付费 App,但**与 iPhone 共享购买**:用与 iPh
 把 `YOUR_USERNAME` 换成你的 GitHub 用户名:
 
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/proxy-list.txt
+https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.conf
 ```
 
----
-
-## 配置方法 1:AirDrop 从 iPhone 传配置(最快)
-
-如果 iPhone 已经配好:
-
-1. iPhone Shadowrocket → 配置页 → 把当前 `.conf` 配置文件**分享 / 导出**。
-2. 通过 **AirDrop** 发送到 iPad。
-3. iPad 上接收后选择「用 Shadowrocket 打开」,配置(含规则集订阅)即导入完成。
+> 同 iPhone:这是一个**只含规则、不含节点**的 Shadowrocket 配置;`PROXY` 表示走你在首页选中的机场节点。
 
 ---
 
-## 配置方法 2:重复 iPhone 流程
+## 配置方法 1:直接添加远程配置(推荐,与 iPhone 相同)
 
-如果不想用 AirDrop,直接在 iPad 上重复 iPhone 的配置步骤即可:
+1. 打开 Shadowrocket → **「配置」→「远程文件」**(**不是**「设置」)。
+2. 右上角 **「+」** → 在 URL 处粘贴上面的 `shadowrocket.conf` raw URL → **下载**。
+3. 选中 `proxy-rules 白名单分流` 配置 → 首页选好节点 → 首页顶部 **「全局路由」设为「配置」**。
 
-1. 打开配置标签 → 添加规则集。
-2. 链接填上面的 `proxy-list.txt` raw URL。
-3. 目标设为 **PROXY**,更新间隔 `86400`。
-4. **排序**:规则集放在 `GEOIP,CN` / `DIRECT` / `FINAL` 之前(同 iPhone 指南的强调)。
-
-详细字段说明见 [setup-shadowrocket-iphone.md](setup-shadowrocket-iphone.md)。
+详细每一步见 [setup-shadowrocket-iphone.md](setup-shadowrocket-iphone.md)。
 
 ---
 
-## 启用 iCloud Sync(推荐)
+## 配置方法 2:用 iCloud Sync 自动同步(最省事)
 
-让 iPhone / iPad / iMac 三端配置自动同步:
+如果 iPhone 已经配好,且三端用同一 Apple ID,可让配置自动同步过来:
 
-1. Shadowrocket → **设置(Settings)** → 找到 **iCloud Sync / iCloud 同步**。
-2. 打开开关。
-3. 确保三台设备用**同一个 Apple ID** 且 iCloud 已登录。
+1. 在 **iPhone 和 iPad** 上都:Shadowrocket → **设置(Settings)** → 打开 **iCloud Sync / iCloud 同步**。
+2. 稍等片刻,iPhone 上的配置(含 `proxy-rules` 远程配置)会同步到 iPad。
+3. iPad 上选中该配置 → 选好节点 → 路由设为「配置」即可。
 
-启用后,在任一设备改了配置,其余设备会自动同步,无需逐台重配。
+> 提示:iCloud Sync 同步的是**配置与规则**,节点订阅也会一并同步;你只需在每台设备各自选一次要用的节点。
 
 ---
 

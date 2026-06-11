@@ -97,6 +97,38 @@ def test_generate_block_and_direct_rules_have_geosite():
     assert rules[2]["ip"] == ["geoip:private", "geoip:cn"]
 
 
+# ---------- generate_shadowrocket_conf ----------
+
+def test_shadowrocket_conf_has_general_and_rule_sections():
+    """Shadowrocket 配置 → 含 [General] 与 [Rule] 段落,以及名称头。"""
+    conf = generate.generate_shadowrocket_conf(["a.com"])
+    assert "#!name=" in conf
+    assert "[General]" in conf
+    assert "[Rule]" in conf
+
+
+def test_shadowrocket_conf_routes_each_domain_to_proxy():
+    """每个白名单域名 → 生成一条 DOMAIN-SUFFIX,xxx,PROXY。"""
+    conf = generate.generate_shadowrocket_conf(["a.com", "b.com"])
+    assert "DOMAIN-SUFFIX,a.com,PROXY" in conf
+    assert "DOMAIN-SUFFIX,b.com,PROXY" in conf
+
+
+def test_shadowrocket_conf_has_cn_direct_and_final_fallback():
+    """含国内直连(GEOIP,CN,DIRECT)与兜底(FINAL,DIRECT),且 FINAL 在最后。"""
+    conf = generate.generate_shadowrocket_conf(["a.com"])
+    assert "GEOIP,CN,DIRECT" in conf
+    assert "FINAL,DIRECT" in conf
+    assert conf.strip().splitlines()[-1] == "FINAL,DIRECT"
+
+
+def test_shadowrocket_conf_contains_no_node_info():
+    """安全:配置中不得出现任何节点 / 代理服务器段落。"""
+    conf = generate.generate_shadowrocket_conf(["a.com"])
+    assert "[Proxy]" not in conf
+    assert "[Proxy Group]" not in conf
+
+
 # ---------- 端到端 ----------
 
 def test_end_to_end_matches_expected_fixture():

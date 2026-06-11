@@ -80,13 +80,14 @@
 我有一个 GitHub 仓库:https://github.com/<USERNAME>/proxy-rules
 
 这是一个代理规则同步项目,主源是 proxy-list.txt(纯文本,
-每行一个域名),GitHub Actions 会自动生成 v2rayn-rules.json。
+每行一个域名),GitHub Actions 会自动生成 v2rayn-rules.json
+(V2RayN 用)和 shadowrocket.conf(Shadowrocket 用)。
 
 请帮我完成以下任务:[在这里描述你要做什么]
 
 操作规则:
 1. 用 git clone 拉取仓库
-2. 修改 proxy-list.txt(只改这个文件,不要碰自动生成的 json)
+2. 修改 proxy-list.txt(只改这个文件,不要碰自动生成的 v2rayn-rules.json / shadowrocket.conf)
 3. 域名书写规范:根域名(reddit.com),不带协议前缀,不带 domain: 前缀
 4. 加入合适的分组下,保持原有的注释结构和分组顺序
 5. commit message 使用语义化:add xxx / remove xxx / refactor xxx
