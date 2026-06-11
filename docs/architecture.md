@@ -44,7 +44,11 @@
 - **V2RayN** 需要结构化的 JSON 路由规则。
 - **Shadowrocket** 需要含 `[Rule]` 段落的配置或模块;它**不能**直接订阅一个「每行一个域名」的纯文本(那只能作为某条规则引用的 `DOMAIN-SET`,无法单独成为订阅)。因此必须由 `generate.py` 生成。
 
-**为什么 Shadowrocket 优先用「模块」而非「配置」**:用户的节点通常存在机场给的整份配置(如 `default.conf`)里。若用我们「只含规则、不含节点」的 `.conf` 去**替换**生效配置,节点会丢失。而**模块(module)会叠加**在当前配置之上、规则优先级更高,只改路由、不动节点——因此推荐 `shadowrocket.module`。`shadowrocket.conf` 仅作为「节点来自独立服务器订阅」场景的备选。
+**为什么 Shadowrocket 优先用「模块」而非「配置」**:用户的节点通常存在机场给的整份配置(如 `default.conf`)里,而且那份配置自带很多规则(如 `apple-relay`→PROXY、`baidu`→DIRECT)。若用我们「只含规则、不含节点」的 `.conf` 去**替换**生效配置,节点会丢失、原有规则也被换掉。而**模块(module)会叠加**在当前配置之上、规则优先级更高,只改路由、不动节点——因此推荐 `shadowrocket.module`。
+
+**模块是一套「严格白名单,主导全部路由」**:`shadowrocket.module` 含完整规则(白名单 → PROXY、局域网/国内 → DIRECT、`FINAL,DIRECT` 兜底)。由于模块优先级高于配置,这套规则会**接管全部路由**——白名单域名走代理、其余一律直连;用户机场配置里原有的路由规则被**覆盖**(若仍想代理某域名,加进 `proxy-list.txt` 即可)。节点不受影响,仍由机场配置提供。`shadowrocket.conf` 是等价的**完整配置**(多了 `[General]`),用于「整份替换」、且仅当节点来自独立服务器订阅时使用。
+
+> 设计取舍:这里默认让模块**主导路由**(严格白名单),而非"在原配置上只追加几个 PROXY 域名"的纯叠加——因为本项目的目标就是一套统一、可预期的白名单。若需纯叠加模式,改 `generate_shadowrocket_module` 去掉 `FINAL` 兜底即可。
 
 > 两者都**只含路由规则,不含任何节点 / 密码**。策略关键字 `PROXY` 表示「走用户在 Shadowrocket 首页选中的节点」,节点来自用户自己的机场。这也是仓库可以保持 Public 的原因之一。
 
@@ -62,9 +66,10 @@
   2. **block**:`geosite:category-ads-all` → 拦截广告。
   3. **direct**:`geosite:private` / `geosite:cn` + `geoip:private` / `geoip:cn` → 国内与局域网直连。
   4. **direct 兜底**:`port: 0-65535` → 其余全部直连。
-- `_shadowrocket_rule_lines(domains)`:构造共用的 `[Rule]` 内容(白名单 `DOMAIN-SUFFIX,xxx,PROXY` + 私有网段/`GEOIP,CN,DIRECT` + `FINAL,DIRECT`),被下面两个函数复用。
-- `generate_shadowrocket_module(domains)`:生成 Shadowrocket **模块**(仅 `[Rule]`,叠加式,推荐)。
-- `generate_shadowrocket_conf(domains)`:生成 Shadowrocket **完整配置**(`[General]` + `[Rule]`,替换式,备选)。
+- `_proxy_whitelist_lines(domains)`:构造共用的「白名单 `DOMAIN-SUFFIX,xxx,PROXY`」规则行。
+- `_shadowrocket_full_rule_lines(domains)`:在白名单基础上追加私有网段/`GEOIP,CN,DIRECT` + `FINAL,DIRECT`,构成完整白名单(供 .conf 用)。
+- `generate_shadowrocket_module(domains)`:生成 Shadowrocket **模块**(仅 `[Rule]`,完整严格白名单——含 `FINAL,DIRECT`,主导全部路由,推荐)。
+- `generate_shadowrocket_conf(domains)`:生成 Shadowrocket **完整配置**(`[General]` + 完整 `[Rule]`,替换式,备选)。
 - `main()`:读文件 → 解析 → 同时写出 `v2rayn-rules.json`(2 空格缩进、`ensure_ascii=False`、末尾换行)、`shadowrocket.module` 与 `shadowrocket.conf`。
 
 错误处理:主源不存在、解析后域名为空都会打印错误并返回退出码 1。

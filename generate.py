@@ -117,18 +117,24 @@ def generate_v2rayn_rules(domains: list[str]) -> list[dict]:
     ]
 
 
-def _shadowrocket_rule_lines(domains: list[str]) -> list[str]:
-    """构造 Shadowrocket ``[Rule]`` 段落的内容行(白名单分流,被 conf 与 module 共用)。
+def _proxy_whitelist_lines(domains: list[str]) -> list[str]:
+    """构造「白名单域名 → PROXY」的规则行(被 conf 与 module 共用)。
 
-    - 代理白名单:每个域名一条 ``DOMAIN-SUFFIX,xxx,PROXY``。
-      ``PROXY`` 是 Shadowrocket 的特殊策略,表示「走当前选中的节点」。
-    - 局域网与国内直连:私有网段 + ``GEOIP,CN,DIRECT``。
-    - 兜底:``FINAL,DIRECT``,其余全部直连(严格白名单)。
-
-    规则自上而下匹配、首条命中即生效,因此白名单(PROXY)在最前,兜底(DIRECT)在最后。
+    每个域名一条 ``DOMAIN-SUFFIX,xxx,PROXY``。``PROXY`` 是 Shadowrocket 的特殊策略,
+    表示「走当前选中的节点」。
     """
     lines = ["# ===== 代理白名单(PROXY = 你在首页选中的节点)====="]
     lines += [f"DOMAIN-SUFFIX,{d},PROXY" for d in domains]
+    return lines
+
+
+def _shadowrocket_full_rule_lines(domains: list[str]) -> list[str]:
+    """构造一套**完整的**白名单路由 ``[Rule]`` 内容(用于替换式 .conf)。
+
+    = 白名单 PROXY + 局域网/国内 DIRECT + ``FINAL,DIRECT`` 兜底。
+    规则自上而下匹配、首条命中即生效,白名单在最前、兜底在最后。
+    """
+    lines = list(_proxy_whitelist_lines(domains))
     lines += [
         "# ===== 局域网与国内直连 =====",
         "IP-CIDR,192.168.0.0/16,DIRECT",
@@ -145,15 +151,15 @@ def generate_shadowrocket_conf(domains: list[str]) -> str:
     """生成 Shadowrocket 完整配置(``[General]`` + ``[Rule]``,不含任何节点)。
 
     用于「替换整份配置」的场景——仅当用户的节点来自独立的「服务器订阅」、
-    而非机场给的整份配置时使用。配置中**不含**任何节点 / 密码 / 机场信息;
-    ``PROXY`` 指向用户在首页选中的节点。
+    而非机场给的整份配置时使用。它是一套**完整**白名单路由(含 ``FINAL,DIRECT`` 兜底)。
+    配置中**不含**任何节点 / 密码 / 机场信息;``PROXY`` 指向用户在首页选中的节点。
 
     :param domains: 已清洗的域名列表
     :return: 完整的 .conf 文本(以换行符结尾)
     """
     lines: list[str] = [
-        "#!name=proxy-rules 白名单分流",
-        "#!desc=只把白名单域名走代理,其余直连;节点由你的机场订阅提供,本文件不含任何节点信息。",
+        "#!name=proxy-rules 白名单分流(完整配置)",
+        "#!desc=完整白名单路由:只把白名单域名走代理,其余直连;不含任何节点信息。",
         "",
         "[General]",
         "bypass-system = true",
@@ -162,31 +168,33 @@ def generate_shadowrocket_conf(domains: list[str]) -> str:
         "",
         "[Rule]",
     ]
-    lines += _shadowrocket_rule_lines(domains)
+    lines += _shadowrocket_full_rule_lines(domains)
     return "\n".join(lines) + "\n"
 
 
 def generate_shadowrocket_module(domains: list[str]) -> str:
-    """生成 Shadowrocket 模块(仅 ``[Rule]``,不含任何节点)。
+    """生成 Shadowrocket 模块(仅 ``[Rule]``,**严格白名单,主导全部路由**,不含任何节点)。
 
     **推荐方式**:模块会**叠加**在用户当前生效的配置(通常是机场给的整份配置)之上,
-    只覆盖路由规则、**不动节点**——因此节点信息原样保留在机场配置里。
-    模块中的规则优先级高于配置中的规则。
+    优先级高于配置中的规则,但**只覆盖路由、不动节点**——节点原样保留在机场配置里。
 
-    模块只包含 ``[Rule]``(白名单 → PROXY、国内/局域网 → DIRECT、其余 → DIRECT),
-    构成一套完整的白名单路由;底层机场配置仅用于提供节点。
-    本文件同样**不含**任何节点 / 密码 / 机场信息。
+    本模块是一套**完整**白名单路由:白名单 → PROXY、局域网/国内 → DIRECT、其余
+    ``FINAL,DIRECT``。由于模块优先级高于配置,这套规则会**主导全部路由**:
+    白名单域名走代理,其余一切直连;用户机场配置里原有的路由规则(如 apple-relay /
+    copilot 走代理)将被**覆盖**(若仍想代理,把对应域名加进 proxy-list.txt 即可)。
+
+    本文件同样不含任何节点 / 密码 / 机场信息;``PROXY`` 指向用户在首页选中的节点。
 
     :param domains: 已清洗的域名列表
     :return: 完整的 .module 文本(以换行符结尾)
     """
     lines: list[str] = [
         "#!name=proxy-rules 白名单分流",
-        "#!desc=把白名单域名走代理、其余直连;作为模块叠加在你的机场配置之上,只改路由不动节点。",
+        "#!desc=严格白名单:只把白名单域名走代理、其余全部直连;叠加在你的配置之上、主导全部路由,但不动节点。",
         "",
         "[Rule]",
     ]
-    lines += _shadowrocket_rule_lines(domains)
+    lines += _shadowrocket_full_rule_lines(domains)
     return "\n".join(lines) + "\n"
 
 
