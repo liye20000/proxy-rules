@@ -74,4 +74,4 @@ https://raw.githubusercontent.com/YOUR_USERNAME/proxy-rules/main/shadowrocket.mo
 
 ## 验证
 
-Safari 访问白名单网站(如 `claude.ai`)能打开即生效。问题见 [troubleshooting.md](troubleshooting.md)。
+Safari 访问白名单网站(如 `claude.ai`)能打开即生效。想精确查看某域名走代理还是直连,用 **「配置 → 测试规则」**(输入域名看 PROXY/DIRECT)或 **「数据」** 标签看实时连接——详见 [setup-shadowrocket-iphone.md](setup-shadowrocket-iphone.md#步骤-5验证)。问题见 [troubleshooting.md](troubleshooting.md)。
