@@ -60,3 +60,8 @@ bn-files.com
 # ===== Bitget =====
 bitget.com
 bgstatic.com
+
+# ===== Reddit =====
+reddit.com
+redd.it
+redditstatic.com    
