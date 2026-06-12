@@ -54,6 +54,26 @@ redditstatic.com    # 静态资源 CDN
 
 ---
 
+## 4.5 按 IP 段走代理(`proxy-ip-list.txt`)
+
+有些服务的核心连接**不经域名/DNS,直接连 IP**(最典型的是 **Telegram**:App 用 MTProto 直连数据中心 IP)。这类服务只加域名是不够的,必须按 **IP 段(CIDR)** 走代理。
+
+- 编辑**另一个主源** `proxy-ip-list.txt`,每行一个 CIDR(IPv4 或 IPv6),`#` 注释规则同上。
+- 写法用标准网段:`91.108.4.0/22`、`2a0a:f280::/32`;脚本会用 `ipaddress` 校验并规范化,主机位写错也会自动归一(如 `1.2.3.4/24` → `1.2.3.0/24`)。
+- 这些 IP 段会被生成为:V2RayN 里一条独立的 `proxy` 路由(`ip` 数组);Shadowrocket 里 `IP-CIDR / IP-CIDR6 ... ,PROXY,no-resolve`,且**排在国内直连之前**,所以非 CN 的 IP 也能正确走代理。
+- `proxy-ip-list.txt` 是可选的:不存在或为空时,只生成域名白名单规则(行为与以前完全一致)。
+
+```text
+# ===== Telegram(数据中心 IP 段,官方公布)=====
+91.108.4.0/22
+149.154.160.0/20
+2a0a:f280::/32
+```
+
+> 提示:Telegram 的网页/登录/`t.me`/下载仍走域名,所以 `telegram.org`、`t.me` 等域名留在 `proxy-list.txt` 里;IP 段负责 App 的消息收发。两者配合才完整。
+
+---
+
 ## 5. 验证生效
 
 1. **查看 Actions**:仓库 Actions 标签下,最新一次运行应为绿色 ✅(约 30 秒)。

@@ -70,6 +70,37 @@ def test_parse_skips_invalid_domains():
     assert generate.parse_domain_list(text) == ["valid.com", "ok.org"]
 
 
+# ---------- parse_ip_list ----------
+
+def test_parse_ip_list_normal():
+    """解析正常 CIDR(IPv4 / IPv6)→ 规范化输出。"""
+    text = "91.108.4.0/22\n2001:67c:4e8::/48\n"
+    assert generate.parse_ip_list(text) == ["91.108.4.0/22", "2001:67c:4e8::/48"]
+
+
+def test_parse_ip_list_skips_comments_and_blanks():
+    """跳过注释行、空行与行内注释。"""
+    text = "# 注释\n\n10.0.0.0/8   # 行内注释\n"
+    assert generate.parse_ip_list(text) == ["10.0.0.0/8"]
+
+
+def test_parse_ip_list_normalizes_host_bits():
+    """主机位被置位 → 规范化为网段写法。"""
+    assert generate.parse_ip_list("1.2.3.4/24\n") == ["1.2.3.0/24"]
+
+
+def test_parse_ip_list_skips_invalid():
+    """非法 CIDR(非 IP、错误前缀)→ 被跳过。"""
+    text = "1.2.3.0/24\nnotanip\n999.0.0.0/8\nok: \n"
+    assert generate.parse_ip_list(text) == ["1.2.3.0/24"]
+
+
+def test_parse_ip_list_dedup():
+    """重复(含规范化后重复)→ 去重并保持顺序。"""
+    text = "1.2.3.0/24\n1.2.3.4/24\n10.0.0.0/8\n"
+    assert generate.parse_ip_list(text) == ["1.2.3.0/24", "10.0.0.0/8"]
+
+
 # ---------- generate_v2rayn_rules ----------
 
 def test_generate_produces_four_rules_in_order():
@@ -95,6 +126,24 @@ def test_generate_block_and_direct_rules_have_geosite():
     assert rules[1]["domain"] == ["geosite:category-ads-all"]
     assert rules[2]["domain"] == ["geosite:private", "geosite:cn"]
     assert rules[2]["ip"] == ["geoip:private", "geoip:cn"]
+
+
+def test_generate_without_cidrs_keeps_four_rules():
+    """不传 cidrs(或为空)→ 仍是原来的 4 条规则,索引不变。"""
+    assert len(generate.generate_v2rayn_rules(["a.com"])) == 4
+    assert len(generate.generate_v2rayn_rules(["a.com"], [])) == 4
+
+
+def test_generate_with_cidrs_inserts_proxy_ip_rule_before_cn_direct():
+    """传入 cidrs → 新增一条 proxy-IP 规则,排在 CN 直连之前。"""
+    rules = generate.generate_v2rayn_rules(["a.com"], ["91.108.4.0/22", "2a0a:f280::/32"])
+    assert [r["outboundTag"] for r in rules] == ["proxy", "proxy", "block", "direct", "direct"]
+    # 第 2 条是 IP 代理规则:只含 ip、不含 domain
+    assert rules[1]["ip"] == ["91.108.4.0/22", "2a0a:f280::/32"]
+    assert rules[1]["domain"] == []
+    # 必须排在 CN 直连(含 geoip:cn)之前
+    cn_idx = next(i for i, r in enumerate(rules) if "geoip:cn" in r["ip"])
+    assert 1 < cn_idx
 
 
 # ---------- generate_shadowrocket_conf ----------
@@ -170,6 +219,39 @@ def test_shadowrocket_conf_and_module_share_proxy_whitelist():
     for line in proxy_lines:
         assert line in conf
         assert line in mod
+
+
+# ---------- IP 段 → PROXY(conf 与 module 共用)----------
+
+def test_proxy_ip_lines_empty_returns_empty():
+    """cidrs 为空 → 不输出任何 IP 行。"""
+    assert generate._proxy_ip_lines([]) == []
+
+
+def test_proxy_ip_lines_uses_cidr6_for_ipv6_and_no_resolve():
+    """IPv4 用 IP-CIDR、IPv6 用 IP-CIDR6,均带 no-resolve、指向 PROXY。"""
+    lines = generate._proxy_ip_lines(["91.108.4.0/22", "2a0a:f280::/32"])
+    assert "IP-CIDR,91.108.4.0/22,PROXY,no-resolve" in lines
+    assert "IP-CIDR6,2a0a:f280::/32,PROXY,no-resolve" in lines
+
+
+def test_shadowrocket_ip_rules_precede_cn_direct_and_final():
+    """IP 段 PROXY 规则排在 GEOIP,CN,DIRECT 与 FINAL,DIRECT 之前。"""
+    for text in (
+        generate.generate_shadowrocket_conf(["a.com"], ["91.108.4.0/22"]),
+        generate.generate_shadowrocket_module(["a.com"], ["91.108.4.0/22"]),
+    ):
+        lines = text.splitlines()
+        ip_idx = lines.index("IP-CIDR,91.108.4.0/22,PROXY,no-resolve")
+        cn_idx = lines.index("GEOIP,CN,DIRECT")
+        assert ip_idx < cn_idx
+        assert lines[-1] == "FINAL,DIRECT"
+
+
+def test_shadowrocket_without_cidrs_has_no_proxy_ip_lines():
+    """不传 cidrs → 不出现任何指向 PROXY 的 IP-CIDR 行。"""
+    mod = generate.generate_shadowrocket_module(["a.com"])
+    assert "PROXY,no-resolve" not in mod
 
 
 # ---------- 端到端 ----------

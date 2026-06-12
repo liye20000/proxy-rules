@@ -22,7 +22,7 @@ git pull --ff-only origin main
 
 ## 核心规则
 
-- **只手动编辑 `proxy-list.txt`**(每行一个根域名,`#` 为注释)。
+- **只手动编辑两个主源**:`proxy-list.txt`(每行一个根域名)与 `proxy-ip-list.txt`(每行一个 CIDR,按 IP 段走代理,如 Telegram MTProto;可选文件)。两者 `#` 均为注释。
 - **绝不手动改派生文件**:`v2rayn-rules.json` / `shadowrocket.module` / `shadowrocket.conf` 都由 `generate.py` 生成,手改会被 Actions 覆盖。
 - 改完务必本地自测:
   ```bash

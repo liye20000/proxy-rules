@@ -10,7 +10,8 @@
                   ┌──────────────────────────────────┐
                   │     GitHub Repository             │
                   │                                  │
-                  │   proxy-list.txt (主源,手动维护)  │
+                  │   proxy-list.txt    (主源:按域名)  │
+                  │   proxy-ip-list.txt (主源:按 IP 段)│
                   │            ↓ generate.py         │
                   │   ┌────────────┴────────────┐    │
                   │   ↓                         ↓    │
@@ -27,7 +28,7 @@
               └────────────────┘    └──────────────────────┘
 ```
 
-核心思路:**单一数据源(Single Source of Truth)+ 自动派生**。用户只维护 `proxy-list.txt`,各客户端需要的格式由 CI 自动生成。
+核心思路:**单一数据源(Single Source of Truth)+ 自动派生**。用户只维护两个纯文本主源——`proxy-list.txt`(按域名)与 `proxy-ip-list.txt`(按 IP 段,如 Telegram MTProto 直连的数据中心 IP),各客户端需要的格式由 CI 自动生成。`proxy-ip-list.txt` 可选,不存在时只生成域名规则。
 
 ---
 
@@ -58,21 +59,24 @@
 
 ## 3. Python 脚本的工作原理
 
-`generate.py` 只用标准库(`json` / `re` / `pathlib` / `sys`),三个核心函数:
+`generate.py` 只用标准库(`json` / `re` / `ipaddress` / `pathlib` / `sys`),核心函数:
 
 - `parse_domain_list(text)`:把纯文本解析成干净的域名列表——去注释、去空行、去行内注释、小写化、去重(保持顺序)、正则校验基本域名格式。
-- `generate_v2rayn_rules(domains)`:生成固定 4 条 V2RayN(Xray-core)路由规则:
-  1. **proxy**:所有白名单域名加 `domain:` 前缀 → 走代理。
-  2. **block**:`geosite:category-ads-all` → 拦截广告。
-  3. **direct**:`geosite:private` / `geosite:cn` + `geoip:private` / `geoip:cn` → 国内与局域网直连。
-  4. **direct 兜底**:`port: 0-65535` → 其余全部直连。
+- `parse_ip_list(text)`:解析 `proxy-ip-list.txt`,用 `ipaddress` 校验并规范化为 CIDR 网段(IPv4 / IPv6),去注释、去重;非法行警告跳过。
+- `generate_v2rayn_rules(domains, cidrs)`:生成 V2RayN(Xray-core)路由规则:
+  1. **proxy(域名)**:所有白名单域名加 `domain:` 前缀 → 走代理。
+  2. **proxy(IP 段)**:`cidrs` 非空时新增一条,`ip` 数组放 CIDR → 走代理;**排在 CN 直连之前**(Telegram 等数据中心 IP 不属于 CN,否则会落到兜底被直连)。
+  3. **block**:`geosite:category-ads-all` → 拦截广告。
+  4. **direct**:`geosite:private` / `geosite:cn` + `geoip:private` / `geoip:cn` → 国内与局域网直连。
+  5. **direct 兜底**:`port: 0-65535` → 其余全部直连。
 - `_proxy_whitelist_lines(domains)`:构造共用的「白名单 `DOMAIN-SUFFIX,xxx,PROXY`」规则行。
-- `_shadowrocket_full_rule_lines(domains)`:在白名单基础上追加私有网段/`GEOIP,CN,DIRECT` + `FINAL,DIRECT`,构成完整白名单(供 .conf 用)。
-- `generate_shadowrocket_module(domains)`:生成 Shadowrocket **模块**(仅 `[Rule]`,完整严格白名单——含 `FINAL,DIRECT`,主导全部路由,推荐)。
-- `generate_shadowrocket_conf(domains)`:生成 Shadowrocket **完整配置**(`[General]` + 完整 `[Rule]`,替换式,备选)。
-- `main()`:读文件 → 解析 → 同时写出 `v2rayn-rules.json`(2 空格缩进、`ensure_ascii=False`、末尾换行)、`shadowrocket.module` 与 `shadowrocket.conf`。
+- `_proxy_ip_lines(cidrs)`:构造共用的「IP 段 → PROXY」规则行(IPv4 用 `IP-CIDR`、IPv6 用 `IP-CIDR6`,均带 `no-resolve`)。
+- `_shadowrocket_full_rule_lines(domains, cidrs)`:白名单域名 + IP 段(在国内直连之前)+ 私有网段/`GEOIP,CN,DIRECT` + `FINAL,DIRECT`,构成完整白名单(供 .conf 用)。
+- `generate_shadowrocket_module(domains, cidrs)`:生成 Shadowrocket **模块**(仅 `[Rule]`,完整严格白名单——含 `FINAL,DIRECT`,主导全部路由,推荐)。
+- `generate_shadowrocket_conf(domains, cidrs)`:生成 Shadowrocket **完整配置**(`[General]` + 完整 `[Rule]`,替换式,备选)。
+- `main()`:读两个主源 → 解析 → 同时写出 `v2rayn-rules.json`(2 空格缩进、`ensure_ascii=False`、末尾换行)、`shadowrocket.module` 与 `shadowrocket.conf`。`proxy-ip-list.txt` 缺失时按空列表处理。
 
-错误处理:主源不存在、解析后域名为空都会打印错误并返回退出码 1。
+错误处理:域名主源不存在、解析后域名为空都会打印错误并返回退出码 1。
 
 规则顺序很重要:两种格式都按自上而下 / 数组顺序匹配,白名单(PROXY)在最前,兜底(DIRECT)在最后。
 
@@ -82,11 +86,11 @@
 
 `.github/workflows/generate.yml`:
 
-- **触发**:push 到 `main` 且改动命中 `proxy-list.txt` / `generate.py` / 工作流自身;或手动 `workflow_dispatch`。
+- **触发**:push 到 `main` 且改动命中 `proxy-list.txt` / `proxy-ip-list.txt` / `generate.py` / 工作流自身;或手动 `workflow_dispatch`。
 - **权限**:`contents: write`,允许 bot 提交回仓库。
 - **步骤**:checkout → 装 Python → 跑 `generate.py` → `git add` 三个派生文件后用 `git diff --cached --quiet` 判断是否有变化 → 有变化才以 `github-actions[bot]` 身份 commit & push。
 
-**防死循环**:工作流的 `paths` 过滤器**只监听 `proxy-list.txt` / `generate.py` / 工作流自身,不监听派生文件(`v2rayn-rules.json` / `shadowrocket.module` / `shadowrocket.conf`)**。所以 bot 提交生成结果不会再次触发自己。
+**防死循环**:工作流的 `paths` 过滤器**只监听 `proxy-list.txt` / `proxy-ip-list.txt` / `generate.py` / 工作流自身,不监听派生文件(`v2rayn-rules.json` / `shadowrocket.module` / `shadowrocket.conf`)**。所以 bot 提交生成结果不会再次触发自己。
 
 ---
 
