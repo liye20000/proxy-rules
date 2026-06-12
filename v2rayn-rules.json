@@ -48,7 +48,14 @@
       "domain:reddit.com",
       "domain:redd.it",
       "domain:redditstatic.com",
-      "domain:polymarket.com"
+      "domain:polymarket.com",
+      "domain:telegram.org",
+      "domain:telegram.me",
+      "domain:t.me",
+      "domain:telegra.ph",
+      "domain:telesco.pe",
+      "domain:tdesktop.com",
+      "domain:tx.me"
     ],
     "ip": [],
     "enabled": true

@@ -70,3 +70,12 @@ redditstatic.com
 # ===== Polymarket =====
 polymarket.com
 
+# ===== Telegram =====
+telegram.org
+telegram.me
+t.me
+telegra.ph
+telesco.pe
+tdesktop.com
+tx.me
+
