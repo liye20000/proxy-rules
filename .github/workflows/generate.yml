@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - "proxy-list.txt"
+      - "proxy-ip-list.txt"
       - "generate.py"
       - ".github/workflows/generate.yml"
   workflow_dispatch:
