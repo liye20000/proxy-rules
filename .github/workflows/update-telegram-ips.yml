@@ -1,0 +1,42 @@
+name: update-telegram-ips
+
+# 每天自动抓取 Telegram 各 ASN 的最新 IP 段(RIPEstat),重新生成规则并提交。
+# 抓取失败/为空时 fetch_telegram_ips.py 会非零退出,本次不提交,绝不清空规则。
+on:
+  schedule:
+    - cron: "0 3 * * *"      # 每天 03:00 UTC(北京时间 11:00)
+  workflow_dispatch:          # 也支持在 Actions 页手动触发
+
+# 允许 bot 把更新结果提交回仓库
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Fetch Telegram IP ranges
+        run: python fetch_telegram_ips.py
+
+      - name: Regenerate rule files
+        run: python generate.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add proxy-ip-auto.txt v2rayn-rules.json shadowrocket.conf shadowrocket.module
+          if git diff --cached --quiet; then
+            echo "Telegram IP 段无变化,跳过提交"
+          else
+            git commit -m "auto: 更新 Telegram IP 段并重新生成规则文件"
+            git push
+          fi

@@ -22,7 +22,8 @@ git pull --ff-only origin main
 
 ## 核心规则
 
-- **只手动编辑两个主源**:`proxy-list.txt`(每行一个根域名)与 `proxy-ip-list.txt`(每行一个 CIDR,按 IP 段走代理,如 Telegram MTProto;可选文件)。两者 `#` 均为注释。
+- **只手动编辑两个主源**:`proxy-list.txt`(每行一个根域名)与 `proxy-ip-list.txt`(每行一个 CIDR,按 IP 段走代理的**手动**补充)。两者 `#` 均为注释。
+- **`proxy-ip-auto.txt` 切勿手动改**:它由 `fetch_telegram_ips.py` 每天抓取 Telegram 各 ASN 的 BGP 网段(RIPEstat),`update-telegram-ips` 工作流会覆盖它。Telegram 的 IP 段无需人工维护。
 - **绝不手动改派生文件**:`v2rayn-rules.json` / `shadowrocket.module` / `shadowrocket.conf` 都由 `generate.py` 生成,手改会被 Actions 覆盖。
 - 改完务必本地自测:
   ```bash

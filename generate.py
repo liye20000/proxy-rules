@@ -20,7 +20,8 @@ from pathlib import Path
 # 主源文件与派生文件的路径(相对脚本所在目录,避免硬编码绝对路径)
 BASE_DIR = Path(__file__).resolve().parent
 INPUT_FILE = BASE_DIR / "proxy-list.txt"
-INPUT_IP_FILE = BASE_DIR / "proxy-ip-list.txt"         # 主源:按 IP 段走代理(如 Telegram)
+INPUT_IP_FILE = BASE_DIR / "proxy-ip-list.txt"         # 主源:按 IP 段走代理(手动维护)
+INPUT_IP_AUTO_FILE = BASE_DIR / "proxy-ip-auto.txt"    # 主源:自动抓取的 IP 段(fetch_telegram_ips.py)
 OUTPUT_FILE = BASE_DIR / "v2rayn-rules.json"            # 派生:V2RayN(Xray-core)规则
 OUTPUT_SR_CONF = BASE_DIR / "shadowrocket.conf"         # 派生:Shadowrocket 完整配置(替换式,仅规则)
 OUTPUT_SR_MODULE = BASE_DIR / "shadowrocket.module"     # 派生:Shadowrocket 模块(叠加式,推荐)
@@ -294,10 +295,13 @@ def main() -> int:
         print("错误:解析后没有任何有效域名,请检查 proxy-list.txt", file=sys.stderr)
         return 1
 
-    # IP 段主源是可选的:文件不存在时按空列表处理(仅生成域名白名单规则)
-    cidrs: list[str] = []
-    if INPUT_IP_FILE.exists():
-        cidrs = parse_ip_list(INPUT_IP_FILE.read_text(encoding="utf-8"))
+    # IP 段主源均为可选:合并「手动」(proxy-ip-list.txt)与「自动抓取」
+    # (proxy-ip-auto.txt)两份,parse_ip_list 会统一规范化并去重。文件缺失按空处理。
+    ip_text = ""
+    for ip_file in (INPUT_IP_FILE, INPUT_IP_AUTO_FILE):
+        if ip_file.exists():
+            ip_text += ip_file.read_text(encoding="utf-8") + "\n"
+    cidrs = parse_ip_list(ip_text)
 
     # 1) V2RayN JSON:2 空格缩进,允许 UTF-8 字符,文件末尾保留一个换行符
     rules = generate_v2rayn_rules(domains, cidrs)

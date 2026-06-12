@@ -28,7 +28,13 @@
               └────────────────┘    └──────────────────────┘
 ```
 
-核心思路:**单一数据源(Single Source of Truth)+ 自动派生**。用户只维护两个纯文本主源——`proxy-list.txt`(按域名)与 `proxy-ip-list.txt`(按 IP 段,如 Telegram MTProto 直连的数据中心 IP),各客户端需要的格式由 CI 自动生成。`proxy-ip-list.txt` 可选,不存在时只生成域名规则。
+核心思路:**单一数据源(Single Source of Truth)+ 自动派生**。主源有三份纯文本(均可选,缺失按空处理):
+
+- `proxy-list.txt` —— 按域名走代理(手动)。
+- `proxy-ip-list.txt` —— 按 IP 段走代理的**手动**补充。
+- `proxy-ip-auto.txt` —— 按 IP 段走代理的**自动**部分,由 `fetch_telegram_ips.py` 每天抓取 Telegram 各 ASN 的 BGP 网段(数据源 RIPEstat),**切勿手动编辑**。
+
+生成时两份 IP 主源合并去重。各客户端需要的格式由 CI 自动生成。
 
 ---
 
@@ -74,7 +80,9 @@
 - `_shadowrocket_full_rule_lines(domains, cidrs)`:白名单域名 + IP 段(在国内直连之前)+ 私有网段/`GEOIP,CN,DIRECT` + `FINAL,DIRECT`,构成完整白名单(供 .conf 用)。
 - `generate_shadowrocket_module(domains, cidrs)`:生成 Shadowrocket **模块**(仅 `[Rule]`,完整严格白名单——含 `FINAL,DIRECT`,主导全部路由,推荐)。
 - `generate_shadowrocket_conf(domains, cidrs)`:生成 Shadowrocket **完整配置**(`[General]` + 完整 `[Rule]`,替换式,备选)。
-- `main()`:读两个主源 → 解析 → 同时写出 `v2rayn-rules.json`(2 空格缩进、`ensure_ascii=False`、末尾换行)、`shadowrocket.module` 与 `shadowrocket.conf`。`proxy-ip-list.txt` 缺失时按空列表处理。
+- `main()`:读三份主源(`proxy-list.txt` + 合并 `proxy-ip-list.txt` / `proxy-ip-auto.txt`)→ 解析 → 同时写出 `v2rayn-rules.json`(2 空格缩进、`ensure_ascii=False`、末尾换行)、`shadowrocket.module` 与 `shadowrocket.conf`。IP 主源缺失时按空列表处理。
+
+`fetch_telegram_ips.py`(独立脚本,只用标准库):查询 Telegram 各 ASN(`62041 / 62014 / 59930 / 44907 / 211157`)在 RIPEstat 的 `announced-prefixes`,汇总去重、按 v4/v6 排序后写出 `proxy-ip-auto.txt`。**任一 ASN 抓取失败或结果为空 → 非零退出且不写文件**,避免清空规则。
 
 错误处理:域名主源不存在、解析后域名为空都会打印错误并返回退出码 1。
 
@@ -84,13 +92,18 @@
 
 ## 4. GitHub Actions 工作流原理
 
-`.github/workflows/generate.yml`:
+**`.github/workflows/generate.yml`**(主源改动 → 重新生成):
 
 - **触发**:push 到 `main` 且改动命中 `proxy-list.txt` / `proxy-ip-list.txt` / `generate.py` / 工作流自身;或手动 `workflow_dispatch`。
 - **权限**:`contents: write`,允许 bot 提交回仓库。
 - **步骤**:checkout → 装 Python → 跑 `generate.py` → `git add` 三个派生文件后用 `git diff --cached --quiet` 判断是否有变化 → 有变化才以 `github-actions[bot]` 身份 commit & push。
 
-**防死循环**:工作流的 `paths` 过滤器**只监听 `proxy-list.txt` / `proxy-ip-list.txt` / `generate.py` / 工作流自身,不监听派生文件(`v2rayn-rules.json` / `shadowrocket.module` / `shadowrocket.conf`)**。所以 bot 提交生成结果不会再次触发自己。
+**`.github/workflows/update-telegram-ips.yml`**(每天自动更新 Telegram IP 段):
+
+- **触发**:`schedule` 每天 03:00 UTC;或手动 `workflow_dispatch`。
+- **步骤**:跑 `fetch_telegram_ips.py` 抓取并写 `proxy-ip-auto.txt` → 跑 `generate.py` 重新生成 → 有变化才提交 `proxy-ip-auto.txt` 与三个派生文件。自身在一个 job 内完成「抓取 + 生成 + 提交」,不依赖 `generate.yml`(bot 用默认 token 的 push 默认不会触发别的工作流)。
+
+**防死循环**:`generate.yml` 的 `paths` 过滤器**只监听 `proxy-list.txt` / `proxy-ip-list.txt` / `generate.py` / 工作流自身,不监听派生文件**。所以 bot 提交生成结果不会再次触发自己。
 
 ---
 
