@@ -35,6 +35,9 @@ goo.gl
 android.com
 withgoogle.com
 
+# ===== NotebookLM(.google 顶级域,不被 google.com 覆盖)=====
+notebooklm.google
+
 # ===== YouTube =====
 youtube.com
 youtu.be
