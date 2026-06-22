@@ -1,7 +1,7 @@
 # 代理白名单 - 主源文件
 # 每行一个域名,以 # 开头的行为注释
 # 修改后 GitHub Actions 会自动重新生成 v2rayn-rules.json
-# 最后更新:2026-06-10
+# 最后更新:2026-06-22
 
 # ===== Anthropic / Claude =====
 anthropic.com
