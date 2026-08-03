@@ -12,11 +12,11 @@
 
 ## ✨ 核心特性
 
-- **一处维护**:只编辑一份纯文本 `proxy-list.txt`,每行一个域名。
+- **一处维护**:域名主源是 `proxy-list.txt`;普通域名匹配子域,`exact:` 可精确到单一主机。
 - **自动转换**:GitHub Actions 监听改动,自动生成 V2RayN 用的 `v2rayn-rules.json`。
 - **多端同步**:Windows(V2RayN)+ Apple 三端(Shadowrocket)统一订阅,自动拉取。
 - **零依赖**:转换脚本仅用 Python 标准库,无第三方包。
-- **轻量运维**:90% 的日常操作只需在 GitHub 网页点几下,2 分钟搞定。
+- **审核后发布**:默认让 Codex 创建草稿 PR,所有自动修改都不自动合并。
 
 ---
 
@@ -32,13 +32,13 @@
 
 ## ⭐ 日常使用
 
-这个项目的运维分为三层,按场景选用工具:
+默认直接把目标告诉 Codex，由它调查依赖、生成产物、运行测试并创建草稿 PR:
 
 | 场景 | 工具 | 耗时 |
 |---|---|---|
-| 加 / 删 1~2 个域名 | GitHub 网页直接编辑 | 2 分钟 |
-| 加新服务 / 智能整理 | Claude.ai 网页 Code 功能 | 5 分钟 |
-| 改架构 / 排查 bug | PC 本地 Claude Code | 按需 |
+| 已知单个域名 | Codex → 草稿 PR | 约 2 分钟 |
+| 完整服务 / AI 域名审计 | Codex Cloud → 草稿 PR | 约 5–15 分钟 |
+| 紧急备用 | GitHub 网页创建 PR | 约 2 分钟 |
 
 → **日常运维的核心参考,详细操作流程见 [docs/daily-ops.md](docs/daily-ops.md)。**
 
@@ -47,7 +47,8 @@
 ## 🏗️ 架构图
 
 ```
-用户编辑 proxy-list.txt → git push(或网页 Commit)
+Codex 从最新 main 创建分支 → 修改主源、生成、pytest → 草稿 PR
+                ↓ 用户审核并合并
                 ↓
    GitHub Actions 监听到 push
                 ↓
@@ -86,13 +87,15 @@ proxy-rules/
 ├── README.md                 # 项目主页(本文件)
 ├── LICENSE                   # MIT 协议
 ├── .gitignore                # Python 标准 gitignore
+├── AGENTS.md                 # 代理维护的唯一权威规范
 ├── proxy-list.txt            # 主源:代理白名单(你唯一需要手动改的文件)
 ├── v2rayn-rules.json         # 派生:V2RayN 规则(Actions 自动生成,勿手动改)
 ├── shadowrocket.module       # 派生:Shadowrocket 模块(推荐,叠加式;Actions 生成)
 ├── shadowrocket.conf         # 派生:Shadowrocket 配置(备选,替换式;Actions 生成)
 ├── generate.py               # 转换脚本(txt → json + module + conf)
 ├── .github/workflows/
-│   └── generate.yml          # GitHub Actions 配置
+│   ├── generate.yml          # PR 验证与主源生成
+│   └── update-telegram-ips.yml # 每日 Telegram ASN 更新
 ├── tests/                    # generate.py 的单元测试
 └── docs/                     # 用户文档(见下方导航)
 ```
@@ -102,7 +105,8 @@ proxy-rules/
 ## 📚 使用文档导航
 
 - [docs/quickstart.md](docs/quickstart.md) — 5 分钟快速上手
-- [docs/daily-ops.md](docs/daily-ops.md) — ⭐ 日常运维三层模式(必看)
+- [docs/daily-ops.md](docs/daily-ops.md) — ⭐ Codex + PR 日常运维(必看)
+- [docs/cloud-maintenance.md](docs/cloud-maintenance.md) — Codex Cloud 与每周巡检
 - [docs/setup-v2rayn.md](docs/setup-v2rayn.md) — Windows V2RayN 配置
 - [docs/setup-shadowrocket-iphone.md](docs/setup-shadowrocket-iphone.md) — iPhone 配置
 - [docs/setup-shadowrocket-ipad.md](docs/setup-shadowrocket-ipad.md) — iPad 配置
@@ -115,7 +119,9 @@ proxy-rules/
 
 ## ➕ 如何添加新规则
 
-最常见的动作:只改 `proxy-list.txt`,**不要碰自动生成的 `v2rayn-rules.json` / `shadowrocket.module` / `shadowrocket.conf`**。在 GitHub 网页打开 `proxy-list.txt` → 铅笔图标编辑 → 在合适的分组加一行域名 → Commit。约 30 秒后 Actions 自动重新生成派生文件,各设备下次拉取订阅时同步。
+最常见的动作是告诉 Codex“把 example.com 加入代理白名单，创建 PR 但不要合并”。
+整个站点及子域使用 `example.com`；只代理一个主机使用 `exact:host.example.com`。
+不要手改三个派生产物。PR 检查会真实生成并运行完整 pytest，合并后各设备在下一次订阅刷新时同步。
 
 详见 [docs/adding-rules.md](docs/adding-rules.md) 与 [docs/daily-ops.md](docs/daily-ops.md)。
 

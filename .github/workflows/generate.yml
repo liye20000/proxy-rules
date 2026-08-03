@@ -2,6 +2,15 @@ name: generate
 
 # 仅在主源或脚本/工作流自身改动时触发,避免 v2rayn-rules.json 改动再次触发(死循环)
 on:
+  pull_request:
+    paths:
+      - "proxy-list.txt"
+      - "proxy-ip-list.txt"
+      - "proxy-ip-auto.txt"
+      - "generate.py"
+      - "fetch_telegram_ips.py"
+      - "tests/**"
+      - ".github/workflows/**"
   push:
     branches:
       - main
@@ -9,8 +18,15 @@ on:
       - "proxy-list.txt"
       - "proxy-ip-list.txt"
       - "generate.py"
+      - "fetch_telegram_ips.py"
+      - "tests/**"
       - ".github/workflows/generate.yml"
   workflow_dispatch:
+
+# 两个会写回仓库的工作流共用同一把锁,避免同时推送。
+concurrency:
+  group: proxy-rules-writer
+  cancel-in-progress: false
 
 # 允许 Actions 把重新生成的 JSON 提交回仓库
 permissions:
@@ -21,17 +37,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.x"
+          python-version: "3.13"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
 
       - name: Generate rule files
         run: python generate.py
 
+      - name: Run full test suite
+        run: python -m pytest tests/ -q
+
+      - name: Verify generated files are committed
+        if: github.event_name == 'pull_request'
+        run: git diff --exit-code -- v2rayn-rules.json shadowrocket.conf shadowrocket.module
+
       - name: Commit and push if changed
+        if: github.event_name != 'pull_request'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

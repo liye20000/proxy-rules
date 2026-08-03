@@ -64,6 +64,18 @@ def test_parse_case_insensitive_dedup():
     assert generate.parse_domain_list(text) == ["example.com"]
 
 
+def test_parse_exact_rules_normalizes_and_deduplicates():
+    """exact: 主机规则会小写化、校验并独立去重。"""
+    text = "exact:API.Example.com\nexact:api.example.com\nexample.com\n"
+    assert generate.parse_domain_list(text) == ["exact:api.example.com", "example.com"]
+
+
+def test_parse_skips_invalid_exact_rules():
+    """exact: 后必须是合法主机名。"""
+    text = "exact:\nexact:nodot\nexact:has space.example.com\nexact:ok.example.com\n"
+    assert generate.parse_domain_list(text) == ["exact:ok.example.com"]
+
+
 def test_parse_skips_invalid_domains():
     """非法域名(无点、含空格)→ 被跳过。"""
     text = "valid.com\nnodot\nhas space.com\nok.org\n"
@@ -120,6 +132,12 @@ def test_generate_proxy_rule_contains_all_domains_with_prefix():
     assert rules[0]["domain"] == ["domain:a.com", "domain:b.com", "domain:c.com"]
 
 
+def test_generate_v2rayn_exact_rule_uses_full_prefix():
+    """V2RayN 的 exact: 规则生成 full:,不会扩大到整个根域名。"""
+    rules = generate.generate_v2rayn_rules(["example.com", "exact:api.vendor.com"])
+    assert rules[0]["domain"] == ["domain:example.com", "full:api.vendor.com"]
+
+
 def test_generate_block_and_direct_rules_have_geosite():
     """block / direct 规则包含预期的 geosite / geoip 条目。"""
     rules = generate.generate_v2rayn_rules(["a.com"])
@@ -161,6 +179,13 @@ def test_shadowrocket_conf_routes_each_domain_to_proxy():
     conf = generate.generate_shadowrocket_conf(["a.com", "b.com"])
     assert "DOMAIN-SUFFIX,a.com,PROXY" in conf
     assert "DOMAIN-SUFFIX,b.com,PROXY" in conf
+
+
+def test_shadowrocket_exact_rule_uses_domain_not_suffix():
+    """Shadowrocket 的 exact: 规则只生成 DOMAIN 精确匹配。"""
+    conf = generate.generate_shadowrocket_conf(["exact:api.vendor.com"])
+    assert "DOMAIN,api.vendor.com,PROXY" in conf
+    assert "DOMAIN-SUFFIX,api.vendor.com,PROXY" not in conf
 
 
 def test_shadowrocket_conf_has_cn_direct_and_final_fallback():
@@ -266,3 +291,39 @@ def test_end_to_end_matches_expected_fixture():
 
     rules = generate.generate_v2rayn_rules(domains)
     assert rules == expected
+
+
+# ---------- 仓库白名单策略 ----------
+
+def test_repository_covers_required_openai_and_google_ai_domains():
+    """接管基线必须覆盖已核对的 OpenAI 与 Google AI 核心域名。"""
+    rules = set(generate.parse_domain_list((ROOT / "proxy-list.txt").read_text(encoding="utf-8")))
+    assert {
+        "openai.com",
+        "chatgpt.com",
+        "oaistatsig.com",
+        "exact:cdn.openaimerge.com",
+        "exact:challenges.cloudflare.com",
+        "exact:humb.apple.com",
+        "ai.google",
+        "labs.google",
+        "deepmind.google",
+        "research.google",
+        "flow.google",
+        "jules.google",
+        "opal.google",
+        "antigravity.google",
+        "codeassist.google",
+        "quantumai.google",
+        "google.dev",
+        "flowmusic.app",
+        "notebooklm.google",
+    } <= rules
+
+
+def test_repository_does_not_expand_large_shared_roots_or_optional_endpoints():
+    """精确依赖不得扩成共享根域,可选客服/支付/遥测端点保持排除。"""
+    rules = set(generate.parse_domain_list((ROOT / "proxy-list.txt").read_text(encoding="utf-8")))
+    assert "apple.com" not in rules
+    assert "cloudflare.com" not in rules
+    assert not ({"intercom.io", "stripe.com", "sentry.io", "datadoghq.com", "workos.com"} & rules)

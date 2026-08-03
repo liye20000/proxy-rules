@@ -7,6 +7,10 @@ on:
     - cron: "0 3 * * *"      # 每天 03:00 UTC(北京时间 11:00)
   workflow_dispatch:          # 也支持在 Actions 页手动触发
 
+concurrency:
+  group: proxy-rules-writer
+  cancel-in-progress: false
+
 # 允许 bot 把更新结果提交回仓库
 permissions:
   contents: write
@@ -16,18 +20,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.x"
+          python-version: "3.13"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
 
       - name: Fetch Telegram IP ranges
         run: python fetch_telegram_ips.py
 
       - name: Regenerate rule files
         run: python generate.py
+
+      - name: Run full test suite
+        run: python -m pytest tests/ -q
 
       - name: Commit and push if changed
         run: |
