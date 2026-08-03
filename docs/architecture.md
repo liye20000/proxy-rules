@@ -2,6 +2,9 @@
 
 面向想理解项目内部机制的读者。日常使用不需要读本文。
 
+项目级执行规范以根目录 `AGENTS.md` 为准。Codex Cloud 和 GitHub 连接是增强层；即使连接
+失效，每日 Actions 与客户端公开订阅仍可独立运行。
+
 ---
 
 ## 1. 完整数据流
@@ -30,7 +33,7 @@
 
 核心思路:**单一数据源(Single Source of Truth)+ 自动派生**。主源有三份纯文本(均可选,缺失按空处理):
 
-- `proxy-list.txt` —— 按域名走代理(手动)。
+- `proxy-list.txt` —— 按域名走代理(手动)：普通规则为后缀匹配，`exact:` 为精确主机。
 - `proxy-ip-list.txt` —— 按 IP 段走代理的**手动**补充。
 - `proxy-ip-auto.txt` —— 按 IP 段走代理的**自动**部分,由 `fetch_telegram_ips.py` 每天抓取 Telegram 各 ASN 的 BGP 网段(数据源 RIPEstat),**切勿手动编辑**。
 
@@ -67,22 +70,22 @@
 
 `generate.py` 只用标准库(`json` / `re` / `ipaddress` / `pathlib` / `sys`),核心函数:
 
-- `parse_domain_list(text)`:把纯文本解析成干净的域名列表——去注释、去空行、去行内注释、小写化、去重(保持顺序)、正则校验基本域名格式。
+- `parse_domain_list(text)`:解析普通域名与 `exact:` 精确主机规则——去注释、去空行、小写化、去重并校验。
 - `parse_ip_list(text)`:解析 `proxy-ip-list.txt`,用 `ipaddress` 校验并规范化为 CIDR 网段(IPv4 / IPv6),去注释、去重;非法行警告跳过。
 - `generate_v2rayn_rules(domains, cidrs)`:生成 V2RayN(Xray-core)路由规则:
-  1. **proxy(域名)**:所有白名单域名加 `domain:` 前缀 → 走代理。
+  1. **proxy(域名)**:普通规则加 `domain:`，精确规则加 `full:` → 走代理。
   2. **proxy(IP 段)**:`cidrs` 非空时新增一条,`ip` 数组放 CIDR → 走代理;**排在 CN 直连之前**(Telegram 等数据中心 IP 不属于 CN,否则会落到兜底被直连)。
   3. **block**:`geosite:category-ads-all` → 拦截广告。
   4. **direct**:`geosite:private` / `geosite:cn` + `geoip:private` / `geoip:cn` → 国内与局域网直连。
   5. **direct 兜底**:`port: 0-65535` → 其余全部直连。
-- `_proxy_whitelist_lines(domains)`:构造共用的「白名单 `DOMAIN-SUFFIX,xxx,PROXY`」规则行。
+- `_proxy_whitelist_lines(domains)`:普通规则生成 `DOMAIN-SUFFIX`，精确规则生成 `DOMAIN`。
 - `_proxy_ip_lines(cidrs)`:构造共用的「IP 段 → PROXY」规则行(IPv4 用 `IP-CIDR`、IPv6 用 `IP-CIDR6`,均带 `no-resolve`)。
 - `_shadowrocket_full_rule_lines(domains, cidrs)`:白名单域名 + IP 段(在国内直连之前)+ 私有网段/`GEOIP,CN,DIRECT` + `FINAL,DIRECT`,构成完整白名单(供 .conf 用)。
 - `generate_shadowrocket_module(domains, cidrs)`:生成 Shadowrocket **模块**(仅 `[Rule]`,完整严格白名单——含 `FINAL,DIRECT`,主导全部路由,推荐)。
 - `generate_shadowrocket_conf(domains, cidrs)`:生成 Shadowrocket **完整配置**(`[General]` + 完整 `[Rule]`,替换式,备选)。
 - `main()`:读三份主源(`proxy-list.txt` + 合并 `proxy-ip-list.txt` / `proxy-ip-auto.txt`)→ 解析 → 同时写出 `v2rayn-rules.json`(2 空格缩进、`ensure_ascii=False`、末尾换行)、`shadowrocket.module` 与 `shadowrocket.conf`。IP 主源缺失时按空列表处理。
 
-`fetch_telegram_ips.py`(独立脚本,只用标准库):查询 Telegram 各 ASN(`62041 / 62014 / 59930 / 44907 / 211157`)在 RIPEstat 的 `announced-prefixes`,汇总去重、按 v4/v6 排序后写出 `proxy-ip-auto.txt`。**任一 ASN 抓取失败或结果为空 → 非零退出且不写文件**,避免清空规则。
+`fetch_telegram_ips.py`(独立脚本,只用标准库):查询 Telegram 各 ASN(`62041 / 62014 / 59930 / 44907 / 211157`)在 RIPEstat 的 `announced-prefixes`,逐条校验并规范化 CIDR，汇总去重、按 v4/v6 排序后写出 `proxy-ip-auto.txt`。**任一 ASN 请求异常、返回空列表或包含非法 CIDR → 非零退出且不写文件**。
 
 错误处理:域名主源不存在、解析后域名为空都会打印错误并返回退出码 1。
 
@@ -94,14 +97,14 @@
 
 **`.github/workflows/generate.yml`**(主源改动 → 重新生成):
 
-- **触发**:push 到 `main` 且改动命中 `proxy-list.txt` / `proxy-ip-list.txt` / `generate.py` / 工作流自身;或手动 `workflow_dispatch`。
+- **触发**:相关文件的 PR、push 到 `main`，或手动 `workflow_dispatch`。
 - **权限**:`contents: write`,允许 bot 提交回仓库。
-- **步骤**:checkout → 装 Python → 跑 `generate.py` → `git add` 三个派生文件后用 `git diff --cached --quiet` 判断是否有变化 → 有变化才以 `github-actions[bot]` 身份 commit & push。
+- **步骤**:checkout v7 → Python 3.13 → 安装 pytest → 真实生成 → 完整测试；PR 只验证，非 PR 运行有变化才由 bot commit & push。
 
 **`.github/workflows/update-telegram-ips.yml`**(每天自动更新 Telegram IP 段):
 
 - **触发**:`schedule` 每天 03:00 UTC;或手动 `workflow_dispatch`。
-- **步骤**:跑 `fetch_telegram_ips.py` 抓取并写 `proxy-ip-auto.txt` → 跑 `generate.py` 重新生成 → 有变化才提交 `proxy-ip-auto.txt` 与三个派生文件。自身在一个 job 内完成「抓取 + 生成 + 提交」,不依赖 `generate.yml`(bot 用默认 token 的 push 默认不会触发别的工作流)。
+- **步骤**:checkout/setup-python v7 → Python 3.13 → 抓取 → 生成 → 完整 pytest → 有变化才提交。两个写入工作流共用 `proxy-rules-writer` concurrency group，避免并发推送。
 
 **防死循环**:`generate.yml` 的 `paths` 过滤器**只监听 `proxy-list.txt` / `proxy-ip-list.txt` / `generate.py` / 工作流自身,不监听派生文件**。所以 bot 提交生成结果不会再次触发自己。
 
@@ -111,7 +114,7 @@
 
 - 仓库内容只是**公开域名的白名单**和转换脚本,**不含任何节点信息、密钥、账号**。
 - 公开反而简化订阅:raw URL 无需鉴权即可被客户端拉取。
-- 鉴权用 fine-grained PAT 且范围仅限本仓库;即便泄露,影响也被限制在这一个仓库内(详见根目录设计文档第 11 节与附录 D)。
+- 日常代理连接不向对话或仓库保存 PAT、GitHub Secret、`OPENAI_API_KEY`；旧 PAT 流程只保留在历史设计文档中。
 
 ---
 

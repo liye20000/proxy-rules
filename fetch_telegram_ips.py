@@ -13,6 +13,7 @@ Telegram IP 段来源——Telegram 没有公开的官方 IP 列表接口。
 退出码:成功 0,失败 1。
 """
 
+import ipaddress
 import json
 import sys
 import urllib.request
@@ -46,14 +47,26 @@ def fetch_asn_prefixes(asn: int) -> list[str]:
 
 
 def collect_telegram_cidrs() -> list[str]:
-    """汇总所有 Telegram ASN 的前缀,去重(保持首次出现顺序)。"""
+    """汇总所有 Telegram ASN 的前缀并严格校验。
+
+    任一 ASN 返回空列表、或任一前缀不是合法 CIDR 时立即抛错。调用方因此不会
+    用不完整数据覆盖上一次成功产物。
+    """
     seen: set[str] = set()
     cidrs: list[str] = []
     for asn in TELEGRAM_ASNS:
-        for prefix in fetch_asn_prefixes(asn):
-            if prefix not in seen:
-                seen.add(prefix)
-                cidrs.append(prefix)
+        prefixes = fetch_asn_prefixes(asn)
+        if not prefixes:
+            raise ValueError(f"AS{asn} 返回空前缀列表")
+
+        for prefix in prefixes:
+            try:
+                normalized = ipaddress.ip_network(prefix, strict=False).with_prefixlen
+            except ValueError as exc:
+                raise ValueError(f"AS{asn} 返回非法 CIDR:{prefix!r}") from exc
+            if normalized not in seen:
+                seen.add(normalized)
+                cidrs.append(normalized)
     return cidrs
 
 

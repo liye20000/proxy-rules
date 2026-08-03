@@ -2,6 +2,15 @@
 
 本文件记录对规则系统的重要改动(主源结构、生成逻辑、自动化等)。日常加删单个域名不在此列出。
 
+## 2026-08-03 — Codex Cloud 接管、精确主机与 AI 白名单
+
+- 新增根目录 `AGENTS.md` 作为唯一维护规范，`CLAUDE.md` 缩减为兼容指针；旧设计文档标记为历史资料。
+- `proxy-list.txt` 支持 `exact:`：V2RayN 生成 `full:`，Shadowrocket 生成 `DOMAIN`，普通规则完全兼容。
+- 补齐 OpenAI/ChatGPT/Codex 的精确共享端点，以及 Google AI、Labs、DeepMind、Flow、Jules、Opal 等域名；不扩大到整个 `apple.com` 或 `cloudflare.com`。
+- Telegram 任一 ASN 为空、响应含非法 CIDR或请求异常时整次失败并保留旧文件。
+- Actions 升级到 checkout/setup-python v7、固定 Python 3.13、完整 pytest、PR 验证和共享写入 concurrency group。
+- 日常流程改为 Codex 创建草稿 PR、用户审核合并；不使用 PAT 对话粘贴、`OPENAI_API_KEY` 或 Codex GitHub Action。
+
 ## 2026-06-12 — Telegram IP 段自动化 + 按 IP 段走代理
 
 新增「按 IP 段走代理」能力,并让 Telegram 的 IP 段全自动维护。

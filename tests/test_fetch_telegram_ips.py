@@ -10,6 +10,8 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
@@ -68,3 +70,41 @@ def test_constants_cover_known_telegram_asns():
     """ASN 列表包含已知的 Telegram 主 ASN。"""
     assert 62041 in f.TELEGRAM_ASNS
     assert set(f.TELEGRAM_ASNS) >= {62041, 62014, 59930, 44907, 211157}
+
+
+# ---------- collect / main 安全门禁 ----------
+
+def test_collect_fails_when_any_asn_is_empty(monkeypatch):
+    """任一 ASN 为空时整次失败,不能接受残缺集合。"""
+    empty_asn = f.TELEGRAM_ASNS[2]
+
+    def fake_fetch(asn):
+        return [] if asn == empty_asn else [f"10.{asn % 255}.0.0/16"]
+
+    monkeypatch.setattr(f, "fetch_asn_prefixes", fake_fetch)
+    with pytest.raises(ValueError, match=f"AS{empty_asn}"):
+        f.collect_telegram_cidrs()
+
+
+def test_collect_rejects_invalid_cidr(monkeypatch):
+    """响应中出现非法 CIDR 时整体失败。"""
+    monkeypatch.setattr(f, "fetch_asn_prefixes", lambda _asn: ["not-a-cidr"])
+    with pytest.raises(ValueError, match="非法 CIDR"):
+        f.collect_telegram_cidrs()
+
+
+def test_collect_normalizes_and_deduplicates(monkeypatch):
+    """合法前缀会规范化并跨 ASN 去重。"""
+    monkeypatch.setattr(f, "fetch_asn_prefixes", lambda _asn: ["10.0.0.1/24"])
+    assert f.collect_telegram_cidrs() == ["10.0.0.0/24"]
+
+
+def test_main_failure_preserves_existing_file(monkeypatch, tmp_path):
+    """抓取失败时不覆盖上一份可用文件。"""
+    output = tmp_path / "proxy-ip-auto.txt"
+    output.write_text("last-known-good\n", encoding="utf-8")
+    monkeypatch.setattr(f, "OUTPUT_FILE", output)
+    monkeypatch.setattr(f, "collect_telegram_cidrs", lambda: (_ for _ in ()).throw(ValueError("bad ASN")))
+
+    assert f.main() == 1
+    assert output.read_text(encoding="utf-8") == "last-known-good\n"

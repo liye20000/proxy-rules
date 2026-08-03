@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """代理规则转换脚本。
 
-读取主源文件 proxy-list.txt(纯文本,每行一个域名),
+读取主源文件 proxy-list.txt(纯文本,每行一个域名或 exact:精确主机),
 生成 V2RayN(Xray-core)格式的路由规则文件 v2rayn-rules.json。
 
 只使用 Python 标准库,可独立运行:
@@ -31,12 +31,13 @@ DOMAIN_PATTERN = re.compile(r"^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\
 
 
 def parse_domain_list(text: str) -> list[str]:
-    """解析文本,返回干净的域名列表。
+    """解析文本,返回干净的域名规则列表。
 
     - 跳过空行和注释行(以 # 开头)
     - 处理行内注释(# 之后的内容)
     - 自动小写化
     - 自动去重(保持首次出现的顺序)
+    - 普通域名匹配自身与所有子域名;``exact:host.example.com`` 只匹配该主机
     - 校验:基本域名格式(包含点,不含空格/特殊字符);非法行打印警告并跳过
 
     :param text: proxy-list.txt 的完整文本内容
@@ -51,7 +52,10 @@ def parse_domain_list(text: str) -> list[str]:
         if not line:
             continue
 
-        if not DOMAIN_PATTERN.match(line):
+        prefix = "exact:" if line.startswith("exact:") else ""
+        host = line.removeprefix(prefix)
+
+        if not DOMAIN_PATTERN.match(host):
             # 非法域名格式:警告到 stderr,但不中断整体处理
             print(f"警告:跳过非法域名行:{raw_line!r}", file=sys.stderr)
             continue
@@ -63,6 +67,13 @@ def parse_domain_list(text: str) -> list[str]:
         domains.append(line)
 
     return domains
+
+
+def _domain_rule_parts(rule: str) -> tuple[bool, str]:
+    """把已清洗规则拆为 ``(是否精确匹配, 主机名)``。"""
+    if rule.startswith("exact:"):
+        return True, rule.removeprefix("exact:")
+    return False, rule
 
 
 def parse_ip_list(text: str) -> list[str]:
@@ -119,7 +130,10 @@ def generate_v2rayn_rules(domains: list[str], cidrs: list[str] | None = None) ->
     :param cidrs: 已清洗的 CIDR 列表(可为 None / 空,此时不生成 IP 代理规则)
     :return: 规则字典数组,可直接序列化为 JSON
     """
-    proxy_domains = [f"domain:{d}" for d in domains]
+    proxy_domains = [
+        f"full:{host}" if is_exact else f"domain:{host}"
+        for is_exact, host in map(_domain_rule_parts, domains)
+    ]
     cidrs = cidrs or []
 
     rules: list[dict] = [
@@ -183,11 +197,14 @@ def generate_v2rayn_rules(domains: list[str], cidrs: list[str] | None = None) ->
 def _proxy_whitelist_lines(domains: list[str]) -> list[str]:
     """构造「白名单域名 → PROXY」的规则行(被 conf 与 module 共用)。
 
-    每个域名一条 ``DOMAIN-SUFFIX,xxx,PROXY``。``PROXY`` 是 Shadowrocket 的特殊策略,
-    表示「走当前选中的节点」。
+    普通域名生成 ``DOMAIN-SUFFIX,xxx,PROXY``;``exact:`` 规则生成
+    ``DOMAIN,host,PROXY``。``PROXY`` 表示「走当前选中的节点」。
     """
     lines = ["# ===== 代理白名单(PROXY = 你在首页选中的节点)====="]
-    lines += [f"DOMAIN-SUFFIX,{d},PROXY" for d in domains]
+    for rule in domains:
+        is_exact, host = _domain_rule_parts(rule)
+        keyword = "DOMAIN" if is_exact else "DOMAIN-SUFFIX"
+        lines.append(f"{keyword},{host},PROXY")
     return lines
 
 
