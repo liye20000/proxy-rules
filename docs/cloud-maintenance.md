@@ -23,5 +23,5 @@ Google AI、Google Labs 的官方域名清单。先搜索已有 codex-maintenanc
 修复提示。涉及删除、来源冲突或大范围代理扩张时只报告，不修改。
 ```
 
-计划时间：每周一 09:00，时区 `Asia/Shanghai`。连接器或云端任务失效不影响每日 Actions 与
+计划时间：每周一 09:00，时区 `Asia/Shanghai`。连接器或云端任务失效不影响定时 Actions 与
 客户端公开订阅。

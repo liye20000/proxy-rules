@@ -7,14 +7,16 @@
 
 1. 从最新 `main` 建立 `codex/<主题>` 分支，不直接向 `main` 写入人工改动。
 2. 自动维护只创建草稿 PR，绝不自动合并。
-3. 修改后必须运行真实生成和完整测试：
+3. 用户只需描述域名或服务需求；Codex 负责调查、修改、验证，并通过本地 `git` 与 `gh`
+   推送分支和创建草稿 PR。GitHub 连接器只作查询或备用，不作为发布链路的必需依赖。
+4. 修改后必须运行真实生成和完整测试：
 
    ```text
    python generate.py
    python -m pytest tests/ -q
    ```
 
-4. PR 必须列出新增规则及匹配类型、依据、明确排除项、测试结果和三个派生产物变化。
+5. PR 必须列出新增规则及匹配类型、依据、明确排除项、测试结果和三个派生产物变化。
 
 ## 单一数据源
 
@@ -51,7 +53,9 @@
 ## GitHub Actions 与云端代理
 
 - 两个写入工作流共用 `proxy-rules-writer` concurrency group。
-- PR 运行生成与完整测试；bot 仅在非 PR 运行中、有实际变化时提交。
+- `generate` 在相关 PR 上自动运行生成与完整测试，合并到 `main` 后自动复验；用户无需手动触发。
+- Telegram ASN 更新每周一 03:00 UTC（北京时间 11:00）自动运行；`workflow_dispatch` 仅作紧急补跑。
+- bot 仅在非 PR 运行中、有实际变化时提交。
 - Codex Cloud 使用 Python 3.13，Setup script 为 `python -m pip install pytest`。
 - Agent 网络默认关闭；只有实时 Telegram 抓取任务需要访问 `stat.ripe.net`。
 - 不引入 Codex GitHub Action，不保存 PAT、GitHub Secret 或 `OPENAI_API_KEY`。

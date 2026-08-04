@@ -1,10 +1,10 @@
 name: update-telegram-ips
 
-# 每天自动抓取 Telegram 各 ASN 的最新 IP 段(RIPEstat),重新生成规则并提交。
+# 每周自动抓取 Telegram 各 ASN 的最新 IP 段(RIPEstat),重新生成规则并提交。
 # 抓取失败/为空时 fetch_telegram_ips.py 会非零退出,本次不提交,绝不清空规则。
 on:
   schedule:
-    - cron: "0 3 * * *"      # 每天 03:00 UTC(北京时间 11:00)
+    - cron: "0 3 * * 1"      # 每周一 03:00 UTC(北京时间 11:00)
   workflow_dispatch:          # 也支持在 Actions 页手动触发
 
 concurrency:
