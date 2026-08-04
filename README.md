@@ -16,7 +16,7 @@
 - **自动转换**:GitHub Actions 监听改动,自动生成 V2RayN 用的 `v2rayn-rules.json`。
 - **多端同步**:Windows(V2RayN)+ Apple 三端(Shadowrocket)统一订阅,自动拉取。
 - **零依赖**:转换脚本仅用 Python 标准库,无第三方包。
-- **审核后发布**:默认让 Codex 创建草稿 PR,所有自动修改都不自动合并。
+- **受控自动发布**:安全的纯新增域名 PR 在 CI 全绿后自动合并；高风险改动仍停下报告。
 
 ---
 
@@ -32,12 +32,12 @@
 
 ## ⭐ 日常使用
 
-默认直接把目标告诉 Codex，由它调查依赖、生成产物、运行测试并创建草稿 PR:
+默认直接把目标告诉 Codex Cloud，由它调查依赖、生成产物、运行测试并发布结果:
 
 | 场景 | 工具 | 耗时 |
 |---|---|---|
-| 已知单个域名 | Codex → 草稿 PR | 约 2 分钟 |
-| 完整服务 / AI 域名审计 | Codex Cloud → 草稿 PR | 约 5–15 分钟 |
+| 已知单个域名 | Codex Cloud → 自动验证与合并 | 约 2 分钟 |
+| 完整服务 / AI 域名审计 | Codex Cloud → 自动验证与安全门禁 | 约 5–15 分钟 |
 | 紧急备用 | GitHub 网页创建 PR | 约 2 分钟 |
 
 → **日常运维的核心参考,详细操作流程见 [docs/daily-ops.md](docs/daily-ops.md)。**
@@ -47,10 +47,12 @@
 ## 🏗️ 架构图
 
 ```
-Codex 从最新 main 创建分支 → 修改主源、生成、pytest → 草稿 PR
-                ↓ 用户审核并合并
+Codex Cloud 从最新 main 创建分支 → 修改主源、生成、pytest → PR
+                ↓ generate CI 全绿 + 安全分类器
                 ↓
-   GitHub Actions 监听到 push
+   安全纯新增自动合并；高风险变更暂停报告
+                ↓
+   GitHub Actions 监听到 main push
                 ↓
    启动 Ubuntu 虚拟机 → 安装 Python → 执行 generate.py
                 ↓
@@ -93,8 +95,10 @@ proxy-rules/
 ├── shadowrocket.module       # 派生:Shadowrocket 模块(推荐,叠加式;Actions 生成)
 ├── shadowrocket.conf         # 派生:Shadowrocket 配置(备选,替换式;Actions 生成)
 ├── generate.py               # 转换脚本(txt → json + module + conf)
+├── classify_safe_domain_pr.py # 受控自动合并分类器
 ├── .github/workflows/
 │   ├── generate.yml          # PR 验证与主源生成
+│   ├── safe-domain-automerge.yml # 安全域名 PR 自动合并
 │   └── update-telegram-ips.yml # 每周 Telegram ASN 更新
 ├── tests/                    # generate.py 的单元测试
 └── docs/                     # 用户文档(见下方导航)
@@ -119,9 +123,10 @@ proxy-rules/
 
 ## ➕ 如何添加新规则
 
-最常见的动作是告诉 Codex“把 example.com 加入代理白名单，创建 PR 但不要合并”。
+最常见的动作是告诉 Codex Cloud“把 example.com 加入代理白名单”。
 整个站点及子域使用 `example.com`；只代理一个主机使用 `exact:host.example.com`。
-不要手改三个派生产物。PR 检查会真实生成并运行完整 pytest，合并后各设备在下一次订阅刷新时同步。
+不要手改三个派生产物。安全的纯新增规则会在真实生成与完整 pytest 通过后自动合并；
+高风险范围才会暂停询问。各设备在下一次订阅刷新时同步。
 
 详见 [docs/adding-rules.md](docs/adding-rules.md) 与 [docs/daily-ops.md](docs/daily-ops.md)。
 

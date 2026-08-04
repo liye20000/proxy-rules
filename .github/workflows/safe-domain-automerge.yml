@@ -1,0 +1,109 @@
+name: safe-domain-automerge
+
+# 只消费 generate 的成功结果。工作流和分类器均来自可信 main，绝不检出或执行 PR 代码。
+on:
+  workflow_run:
+    workflows: ["generate"]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge-safe-domain-pr:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: safe-domain-automerge-main
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout trusted default branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Classify pull request
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          pr_number="$(jq -r '.workflow_run.pull_requests[0].number // empty' "$GITHUB_EVENT_PATH")"
+          if [[ -z "$pr_number" ]]; then
+            pr_number="$(
+              gh api -H "Accept: application/vnd.github+json" \
+                "repos/$GITHUB_REPOSITORY/commits/$EVENT_HEAD_SHA/pulls" \
+                --jq '[.[] | select(.state == "open" and .base.ref == "main")][0].number // empty'
+            )"
+          fi
+          if [[ -z "$pr_number" ]]; then
+            echo "safe=false" >> "$GITHUB_OUTPUT"
+            echo "No open pull request is associated with the successful head SHA." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          for attempt in 1 2 3 4 5; do
+            gh api "repos/$GITHUB_REPOSITORY/pulls/$pr_number" > "$RUNNER_TEMP/pr.json"
+            if [[ "$(jq -r '.mergeable' "$RUNNER_TEMP/pr.json")" != "null" ]]; then
+              break
+            fi
+            sleep 2
+          done
+          base_sha="$(jq -r '.base.sha' "$RUNNER_TEMP/pr.json")"
+          head_sha="$(jq -r '.head.sha' "$RUNNER_TEMP/pr.json")"
+          head_ref="$(jq -r '.head.ref' "$RUNNER_TEMP/pr.json")"
+
+          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$pr_number/files" \
+            --jq '.[].filename' > "$RUNNER_TEMP/changed-files.txt"
+          gh api -H "Accept: application/vnd.github.raw+json" \
+            "repos/$GITHUB_REPOSITORY/contents/proxy-list.txt?ref=$base_sha" \
+            > "$RUNNER_TEMP/base-proxy-list.txt"
+          gh api -H "Accept: application/vnd.github.raw+json" \
+            "repos/$GITHUB_REPOSITORY/contents/proxy-list.txt?ref=$head_sha" \
+            > "$RUNNER_TEMP/head-proxy-list.txt"
+
+          set +e
+          python classify_safe_domain_pr.py \
+            --repository "$GITHUB_REPOSITORY" \
+            --event-head-sha "$EVENT_HEAD_SHA" \
+            --pr-json "$RUNNER_TEMP/pr.json" \
+            --changed-files "$RUNNER_TEMP/changed-files.txt" \
+            --base-list "$RUNNER_TEMP/base-proxy-list.txt" \
+            --head-list "$RUNNER_TEMP/head-proxy-list.txt" \
+            | tee "$RUNNER_TEMP/classification.txt"
+          classifier_status="${PIPESTATUS[0]}"
+          set -e
+
+          cat "$RUNNER_TEMP/classification.txt" >> "$GITHUB_STEP_SUMMARY"
+          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
+          if [[ "$classifier_status" -eq 0 ]]; then
+            echo "safe=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "safe=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge verified additive domain PR
+        if: steps.gate.outputs.safe == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh pr merge "${{ steps.gate.outputs.pr_number }}"
+          --repo "$GITHUB_REPOSITORY"
+          --squash
+          --delete-branch
+          --match-head-commit "${{ steps.gate.outputs.head_sha }}"
+
+      - name: Trigger trusted main verification
+        if: steps.gate.outputs.safe == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run generate.yml --repo "$GITHUB_REPOSITORY" --ref main
