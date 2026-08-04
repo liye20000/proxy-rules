@@ -5,10 +5,11 @@
 
 ## 开工与交付
 
-1. 从最新 `main` 建立 `codex/<主题>` 分支，不直接向 `main` 写入人工改动。
-2. 自动维护只创建草稿 PR，绝不自动合并。
-3. 用户只需描述域名或服务需求；Codex 负责调查、修改、验证，并通过本地 `git` 与 `gh`
-   推送分支和创建草稿 PR。GitHub 连接器只作查询或备用，不作为发布链路的必需依赖。
+1. 默认在 Codex Cloud 从最新 `main` 建立分支，不依赖用户本地电脑。普通域名新增使用
+   `codex/domain-<service>-<YYYYMMDD>`；其他维护使用 `codex/<主题>`。
+2. 用户只需描述域名或服务需求；Codex 负责调查、修改、验证、推送分支和创建 PR。
+3. 满足“受控全自动”门禁的纯新增域名 PR 创建为 ready 状态，CI 全绿后自动 squash 合并；
+   其他改动只创建草稿 PR，不得自动合并。
 4. 修改后必须运行真实生成和完整测试：
 
    ```text
@@ -17,6 +18,21 @@
    ```
 
 5. PR 必须列出新增规则及匹配类型、依据、明确排除项、测试结果和三个派生产物变化。
+6. 对 ready 的安全域名 PR，Codex 必须继续跟踪到自动合并与 `main` 上的 `generate` 复验成功，
+   再向用户报告可用结果；若门禁未合并或复验失败，报告具体原因，不把半成品当作完成。
+
+### 受控全自动门禁
+
+只有同时满足以下条件才允许无人审核自动合并：
+
+- PR 来自本仓库所有者、目标为 `main`，分支符合 `codex/domain-<service>-<YYYYMMDD>`，且不是草稿。
+- `generate` 对当前 PR head 的真实生成、派生产物校验和完整 pytest 全部成功。
+- 只改动 `proxy-list.txt` 与三个派生产物，且至少新增一个有效规则、不删除任何旧规则。
+- 不新增 `apple.com`、`cloudflare.com` 等分类器列出的高影响共享根域；其精确主机 `exact:` 仍可自动合并。
+
+删除规则、修改 IP 主源、脚本、测试、文档、工作流或安全配置，以及来源冲突和大范围扩张，
+一律创建草稿 PR 或报告并等待用户决定。自动合并分类器必须从可信 `main` 执行，绝不检出或
+运行 PR 中的分类器/工作流代码。
 
 ## 单一数据源
 
@@ -53,11 +69,13 @@
 ## GitHub Actions 与云端代理
 
 - 两个写入工作流共用 `proxy-rules-writer` concurrency group。
-- `generate` 在相关 PR 上自动运行生成与完整测试，合并到 `main` 后自动复验；用户无需手动触发。
+- `generate` 在相关 PR 上以只读权限自动运行生成与完整测试，合并到 `main` 后自动复验；用户无需手动触发。
+- `safe-domain-automerge` 只消费成功的 `generate` 结果，并按上述门禁自动 squash 合并安全 PR。
 - Telegram ASN 更新每周一 03:00 UTC（北京时间 11:00）自动运行；`workflow_dispatch` 仅作紧急补跑。
 - bot 仅在非 PR 运行中、有实际变化时提交。
 - Codex Cloud 使用 Python 3.13，Setup script 为 `python -m pip install pytest`。
-- Agent 网络默认关闭；只有实时 Telegram 抓取任务需要访问 `stat.ripe.net`。
+- Cloud Agent 网络开启为全域只读，只允许 `GET`、`HEAD`、`OPTIONS`，用于查询任意新服务的官方资料；
+  禁止登录、上传和远端写请求。Telegram 抓取仍由 GitHub Actions 访问 `stat.ripe.net`。
 - 不引入 Codex GitHub Action，不保存 PAT、GitHub Secret 或 `OPENAI_API_KEY`。
 - GitHub 连接失效时，仓库 Actions 和公开订阅必须仍能独立工作。
 

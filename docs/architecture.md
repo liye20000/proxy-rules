@@ -106,6 +106,15 @@
 - **触发**:`schedule` 每周一 03:00 UTC（北京时间 11:00）;或紧急时手动 `workflow_dispatch`。
 - **步骤**:checkout/setup-python v7 → Python 3.13 → 抓取 → 生成 → 完整 pytest → 有变化才提交。两个写入工作流共用 `proxy-rules-writer` concurrency group，避免并发推送。
 
+**`.github/workflows/safe-domain-automerge.yml`**（受控自动合并）:
+
+- **触发**：`generate` 工作流完成，且来源事件为 PR、结论为成功。
+- **信任边界**：只检出可信默认分支；通过 GitHub API 读取 PR 元数据、文件列表和新旧
+  `proxy-list.txt`，绝不检出或执行 PR head 中的代码。
+- **门禁**：同仓库所有者、规范分支、当前 head CI、只新增域名、四个固定文件、无高影响共享根域。
+- **结果**：门禁通过后 squash 合并、删除分支，并通过 `workflow_dispatch` 显式触发 `main`
+  复验；不通过则保持 PR，不执行发布。
+
 **防死循环**:`generate.yml` 的 `paths` 过滤器**只监听 `proxy-list.txt` / `proxy-ip-list.txt` / `generate.py` / 工作流自身,不监听派生文件**。所以 bot 提交生成结果不会再次触发自己。
 
 ---
@@ -115,6 +124,8 @@
 - 仓库内容只是**公开域名的白名单**和转换脚本,**不含任何节点信息、密钥、账号**。
 - 公开反而简化订阅:raw URL 无需鉴权即可被客户端拉取。
 - 日常代理连接不向对话或仓库保存 PAT、GitHub Secret、`OPENAI_API_KEY`；旧 PAT 流程只保留在历史设计文档中。
+- PR 代码在 `generate` 中只有 `contents: read`；写权限只授予可信 `main` 的发布任务和不执行
+  PR 代码的自动合并任务。
 
 ---
 
