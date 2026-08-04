@@ -95,7 +95,7 @@ proxy-rules/
 ├── generate.py               # 转换脚本(txt → json + module + conf)
 ├── .github/workflows/
 │   ├── generate.yml          # PR 验证与主源生成
-│   └── update-telegram-ips.yml # 每日 Telegram ASN 更新
+│   └── update-telegram-ips.yml # 每周 Telegram ASN 更新
 ├── tests/                    # generate.py 的单元测试
 └── docs/                     # 用户文档(见下方导航)
 ```

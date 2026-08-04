@@ -3,7 +3,7 @@
 面向想理解项目内部机制的读者。日常使用不需要读本文。
 
 项目级执行规范以根目录 `AGENTS.md` 为准。Codex Cloud 和 GitHub 连接是增强层；即使连接
-失效，每日 Actions 与客户端公开订阅仍可独立运行。
+失效，定时 Actions 与客户端公开订阅仍可独立运行。
 
 ---
 
@@ -35,7 +35,7 @@
 
 - `proxy-list.txt` —— 按域名走代理(手动)：普通规则为后缀匹配，`exact:` 为精确主机。
 - `proxy-ip-list.txt` —— 按 IP 段走代理的**手动**补充。
-- `proxy-ip-auto.txt` —— 按 IP 段走代理的**自动**部分,由 `fetch_telegram_ips.py` 每天抓取 Telegram 各 ASN 的 BGP 网段(数据源 RIPEstat),**切勿手动编辑**。
+- `proxy-ip-auto.txt` —— 按 IP 段走代理的**自动**部分,由 `fetch_telegram_ips.py` 每周抓取 Telegram 各 ASN 的 BGP 网段(数据源 RIPEstat),**切勿手动编辑**。
 
 生成时两份 IP 主源合并去重。各客户端需要的格式由 CI 自动生成。
 
@@ -101,9 +101,9 @@
 - **权限**:`contents: write`,允许 bot 提交回仓库。
 - **步骤**:checkout v7 → Python 3.13 → 安装 pytest → 真实生成 → 完整测试；PR 只验证，非 PR 运行有变化才由 bot commit & push。
 
-**`.github/workflows/update-telegram-ips.yml`**(每天自动更新 Telegram IP 段):
+**`.github/workflows/update-telegram-ips.yml`**(每周自动更新 Telegram IP 段):
 
-- **触发**:`schedule` 每天 03:00 UTC;或手动 `workflow_dispatch`。
+- **触发**:`schedule` 每周一 03:00 UTC（北京时间 11:00）;或紧急时手动 `workflow_dispatch`。
 - **步骤**:checkout/setup-python v7 → Python 3.13 → 抓取 → 生成 → 完整 pytest → 有变化才提交。两个写入工作流共用 `proxy-rules-writer` concurrency group，避免并发推送。
 
 **防死循环**:`generate.yml` 的 `paths` 过滤器**只监听 `proxy-list.txt` / `proxy-ip-list.txt` / `generate.py` / 工作流自身,不监听派生文件**。所以 bot 提交生成结果不会再次触发自己。

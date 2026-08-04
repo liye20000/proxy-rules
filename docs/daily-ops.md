@@ -2,6 +2,8 @@
 
 默认入口是在 Codex 中直接描述目标。Codex 调查依赖、修改主源、生成产物并创建草稿 PR；
 用户审核合并后，客户端下一次刷新公开订阅即可生效。GitHub 网页编辑仅作应急备用。
+分支推送和草稿 PR 默认通过本地 `git` 与 `gh` 完成，不依赖 GitHub 连接器写入。用户只需
+提出需求并最终审核合并，无需手动触发工作流。
 
 ## 新增域名
 
@@ -45,8 +47,10 @@ Codex 会先判断已有后缀规则是否已经覆盖，再选择语法：
 
 ## Telegram 自动维护
 
-每日工作流从 RIPEstat 查询五个 Telegram ASN。任一 ASN 为空、CIDR 非法或响应异常时，
+每周一北京时间 11:00，工作流从 RIPEstat 查询五个 Telegram ASN。任一 ASN 为空、CIDR 非法或响应异常时，
 本次工作流失败且保留上一份文件。两个写入工作流使用同一 concurrency group，避免并发推送。
+紧急需要刷新时，Codex 可通过 `gh workflow run update-telegram-ips.yml --ref main` 补跑，
+用户无需进入 GitHub Actions 页面操作。
 
 ## 每周维护
 

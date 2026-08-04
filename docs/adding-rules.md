@@ -28,7 +28,7 @@ Codex 应优先查官方文档，并核对网页、登录、API、静态资源�
 - `proxy-ip-list.txt`：人工维护，每行一个 IPv4/IPv6 CIDR。
 - `proxy-ip-auto.txt`：Telegram 自动数据，不得手改。
 
-Telegram 每日任务查询 RIPEstat。任一 ASN 为空、包含非法 CIDR 或请求异常时整次失败并保留
+Telegram 每周任务查询 RIPEstat。任一 ASN 为空、包含非法 CIDR 或请求异常时整次失败并保留
 上一份文件。
 
 ## 验证与发布
