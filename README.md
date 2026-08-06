@@ -17,6 +17,7 @@
 - **多端同步**:Windows(V2RayN)+ Apple 三端(Shadowrocket)统一订阅,自动拉取。
 - **零依赖**:转换脚本仅用 Python 标准库,无第三方包。
 - **受控自动发布**:安全的纯新增域名 PR 在 CI 全绿后自动合并；高风险改动仍停下报告。
+- **云端与手机可用**:Codex Cloud 独立执行，手机浏览器或已开放 Codex 入口的 ChatGPT iOS App 均可提交任务。
 
 ---
 
@@ -40,7 +41,8 @@
 | 完整服务 / AI 域名审计 | Codex Cloud → 自动验证与安全门禁 | 约 5–15 分钟 |
 | 紧急备用 | GitHub 网页创建 PR | 约 2 分钟 |
 
-→ **日常运维的核心参考,详细操作流程见 [docs/daily-ops.md](docs/daily-ops.md)。**
+→ **日常运维见 [docs/daily-ops.md](docs/daily-ops.md)，手机与 Cloud 环境验收见
+[docs/cloud-maintenance.md](docs/cloud-maintenance.md)。**
 
 ---
 

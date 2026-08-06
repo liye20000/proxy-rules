@@ -7,10 +7,44 @@
 - Python：3.13。
 - Setup script：`python -m pip install pytest`。
 - Secrets：空；不添加 PAT、GitHub Secret 或 `OPENAI_API_KEY`。
+- Description 使用以下文本，使环境摘要与当前自动合并门禁一致：
+
+  ```text
+  Strict proxy whitelist maintenance. Follow AGENTS.md, run real generation and the full pytest suite.
+  Safe additive domain PRs may auto-merge after CI; risky or broad changes remain draft or report-only.
+  ```
 - Agent 网络：开启，域名列表选择 `All`，HTTP 方法只允许 `GET`、`HEAD`、`OPTIONS`；仅用于读取
   任意新服务的官方资料，不允许登录、上传或远端写入。
 - 交付：从最新 `main` 建立 `codex/domain-<service>-<YYYYMMDD>` 分支。满足根目录 `AGENTS.md`
   自动门禁的纯新增域名创建 ready PR；其他变化创建草稿 PR 或报告。
+
+环境页面显示 `Use this` 只能证明仓库和配置已经保存。首次使用还应提交一次只读健康检查，确认
+Cloud 容器能够实际检出仓库、执行生成器和完整测试：
+
+```text
+只做环境健康检查，不修改文件、不提交、不创建 PR。
+读取 AGENTS.md，输出 Python 版本，运行 python generate.py 和
+python -m pytest tests/ -q，最后输出 git status --short 并报告测试数量。
+```
+
+## 手机启动云端任务
+
+最稳定的入口是手机浏览器打开 <https://chatgpt.com/codex/cloud>，选择
+`liye20000/proxy-rules` 环境并点击 `Use this`。ChatGPT iOS App 已出现 `Codex`、`Code` 或
+`Remote` 入口的账号也可以直接使用；选择同一仓库、`main` 和本环境后提交需求。如果 App
+没有仓库或环境选择器，应改用手机浏览器，避免在未绑定仓库的普通聊天中提交维护任务。
+
+日常只需描述目标，例如：
+
+```text
+把 example.com 加入代理白名单，遵循 AGENTS.md 全自动处理。
+安全的纯新增域名通过 CI 后自动合并；风险或大范围变更只报告并创建草稿 PR。
+完成后继续跟踪到 main 复验成功，再告诉我最终结果。
+```
+
+任务运行在 Cloud 独立容器中，不需要本地电脑保持开机。Cloud 合并到 GitHub 后，本地工程仍然
+独立有效；本地执行 `git switch main` 和 `git pull --ff-only origin main` 才会取得云端的新提交。
+不要让本地与 Cloud 同时修改同一个工作分支。
 
 ## 周期任务提示词
 
