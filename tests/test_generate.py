@@ -306,6 +306,7 @@ def test_repository_covers_required_openai_and_google_ai_domains():
         "exact:challenges.cloudflare.com",
         "exact:humb.apple.com",
         "ai.google",
+        "exact:google.ai",
         "labs.google",
         "deepmind.google",
         "research.google",

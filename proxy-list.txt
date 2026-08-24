@@ -1,7 +1,7 @@
 # 代理白名单 - 主源文件
 # 每行一个域名;exact:host.example.com 表示只匹配该主机;以 # 开头的行为注释
 # 修改后 GitHub Actions 会自动重新生成 v2rayn-rules.json
-# 最后更新:2026-08-03
+# 最后更新:2026-08-24
 
 # ===== Anthropic / Claude =====
 anthropic.com
@@ -39,6 +39,7 @@ goo.gl
 android.com
 withgoogle.com
 ai.google
+exact:google.ai
 labs.google
 deepmind.google
 research.google
