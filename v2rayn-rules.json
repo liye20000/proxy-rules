@@ -34,6 +34,8 @@
       "domain:android.com",
       "domain:withgoogle.com",
       "domain:ai.google",
+      "full:google.ai",
+      "full:search.google",
       "domain:labs.google",
       "domain:deepmind.google",
       "domain:research.google",
