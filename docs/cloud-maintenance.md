@@ -19,6 +19,8 @@
   自动门禁的纯新增域名创建 ready PR；其他变化创建草稿 PR 或报告。
 - Google AI 官方产品页的 AI Mode 入口使用 `google.ai` 跳转到 `google.com`；白名单以
   `exact:google.ai` 只覆盖该入口，不扩大到其他 `.ai` 域名。
+- Google AI 官方产品页的 Lens 入口使用 `search.google`；白名单以
+  `exact:search.google` 只覆盖该入口，实际搜索与应用深链继续由既有 Google 规则覆盖。
 
 环境页面显示 `Use this` 只能证明仓库和配置已经保存。首次使用还应提交一次只读健康检查，确认
 Cloud 容器能够实际检出仓库、执行生成器和完整测试：
