@@ -24,6 +24,10 @@ exact:api.vendor.example
 Codex 应优先查官方文档，并核对网页、登录、API、静态资源、文件和实时连接。广告、统计、
 客服、遥测、支付和企业 SSO 默认排除。PR 要列出依据和排除项。
 
+Google Labs Tabletop 使用独立站点域名 `tabletop.google`，按普通后缀规则覆盖站点及其子域名；
+依据为 [Google Labs 产品目录](https://labs.google/) 和
+[Google 官方介绍](https://blog.google/innovation-and-ai/models-and-research/google-labs/tabletop/)。
+
 ## CIDR
 
 - `proxy-ip-list.txt`：人工维护，每行一个 IPv4/IPv6 CIDR。
